@@ -1,0 +1,27 @@
+{
+  "name": "real-estate-fnft",
+  "version": "1.0.0",
+  "description": "Fractional NFT implementation for Real Estate",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shubhamacharya/Real-Estate-FNFT.git"
+  },
+  "keywords": [
+    "FNFT",
+    "Real",
+    "Estate",
+    "Fractional",
+    "NFT",
+    "NFT"
+  ],
+  "author": "Shubham Acharya",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shubhamacharya/Real-Estate-FNFT/issues"
+  },
+  "homepage": "https://github.com/shubhamacharya/Real-Estate-FNFT#readme"
+}
