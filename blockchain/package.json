@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "Fractional NFT Implementation for Real Estate",
   "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -24,6 +27,27 @@
   ],
   "author": "Shubham Acharya",
   "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.7.0",
+    "ganache": "^7.2.0",
+    "ganache-cli": "^6.12.2",
+    "mocha": "^10.0.0",
+    "solc": "^0.8.14-fixed",
+    "truffle-hdwallet-provider": "^1.0.17",
+    "util": "^0.12.4",
+    "web3": "^1.7.3"
+  },
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.6",
+    "@nomiclabs/hardhat-truffle5": "^2.0.6",
+    "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/test-helpers": "^0.5.15",
+    "ethereum-waffle": "^3.4.4",
+    "ethers": "^5.6.9",
+    "hardhat": "^2.9.9",
+    "solidity-coverage": "^0.7.21"
+  },
   "bugs": {
     "url": "https://github.com/shubhamacharya/Real-Estate-FNFT/issues"
   },
