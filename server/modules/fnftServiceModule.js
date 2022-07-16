@@ -1,8 +1,8 @@
 const logger = require('../config/winston');
 //const walletIns = require('./walletProvider');
-const FractionalNFTJSON = require('../../blockchain/build/contracts/FractionalNFT.json')
-const FNFTokenJSON = require('../../blockchain/build/contracts/FNFToken.json')
-const FractionalClaim = require('../../blockchain/build/contracts/FractionalClaim.json')
+const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
+const FNFTokenJSON = require('../contractJSONs/FNFToken.json')
+const FractionalClaim = require('../contractJSONs/FractionalClaim.json')
 const utility = require('./utility');
 const deploy = require('./deploy')
 
@@ -215,6 +215,7 @@ const getFundedAmt = async () => {
 
 const getTotalFNFTClaimSupply = async () => {
     let supp = await FractionalClaimInstance.methods.supply().call()
+    console.log('supp', supp);
     return supp
 }
 
