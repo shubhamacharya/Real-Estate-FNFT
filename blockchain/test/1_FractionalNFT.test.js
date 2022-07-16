@@ -1,10 +1,11 @@
 const { assert, ethers } = require("hardhat");
 const Web3 = require('web3');
 const ganache = require('ganache-cli');
+const abiDecoder = require('abi-decoder');
 const FractionalNFT = artifacts.require("FractionalNFT");
 const FNFToken = artifacts.require("FNFToken");
 const FractionalClaim = artifacts.require("FractionalClaim");
-
+const NFTEscrow = artifacts.require("NFTEscrow");
 
 let web3
 let owner,fractionalBuyer1,fractionalBuyer2
@@ -13,6 +14,8 @@ let fractionalTokenAddress
 let result
 let FNFTokenInstance
 let fractionalClaimInstance
+let NFTEscrowInstance
+
 
 
 contract('FractionalNFT', async accounts => {
@@ -21,10 +24,15 @@ contract('FractionalNFT', async accounts => {
         owner = accounts[0]
         fractionalBuyer1 = accounts[1]
         fractionalBuyer2 = accounts[2]
+        FNFTBuyer = accounts[3]
 
+        const web3Handle = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:8545'));
+        
+        abiDecoder.addABI(FNFToken.abi);
         before(async () => {
             fractionalNFTInstance = await FractionalNFT.new();
-            // fractionalClaimInstance = await FractionalClaim.new();
+            NFTEscrowInstance = await NFTEscrow.new();
+            contractHandle = new web3Handle.eth.Contract(FractionalNFT.abi, fractionalNFTInstance.address);
         })
         
         it('should mint 1 - ERC-721 and 4 - ERC-20 tokens', async() => {
@@ -184,5 +192,55 @@ contract('FractionalNFT', async accounts => {
             assert.equal(result.toNumber(), 0, 'Token supply does not match');
         })
         // now the ERC721 token can be transferred to another user/buyer
+        it('should print the address of NFTEscrow', async()=>{
+            console.log('NFTEscrow Address', NFTEscrowInstance.address);
+        })
+        it('should approve NFTEscrow contract to interact with FNFT token', async()=>{
+            result = await fractionalNFTInstance.approve(NFTEscrowInstance.address, 0);
+            assert.equal(result.receipt.status, true, 'Approval failed')
+            assert.equal(result.logs[0].event, 'Approval', 'Approval event not emitted')
+            assert.equal(result.logs[0].args.owner,owner, 'Owner does not match')
+            assert.equal(result.logs[0].args.approved,NFTEscrowInstance.address, 'Approved address does not match')
+            assert.equal(result.logs[0].args.tokenId.toString(),0, 'Token Id does not match')
+        })
+        it('should deposite the FNFT token to FNTEscrow account to put it on sale', async()=>{
+            result = await NFTEscrowInstance.depositNFT(fractionalNFTInstance.address, 0)
+            assert.equal(result.receipt.status, true, 'deposite function failed')
+          
+            let res= await contractHandle.getPastEvents('allEvents', {
+                fromBlock: result.receipt.blockNumber,
+                toBlock: result.receipt.blockNumber
+            });
+            assert.equal(res[0].event, 'Approval', 'Approval event not emitted')
+            assert.equal(res[1].event, 'Transfer', 'Transfer event not emitted')
+        })
+        it('should allow buyer to deposite ehter to NFTEscrow contract', async() => {
+            result = await NFTEscrowInstance.depositETH({from:FNFTBuyer, value: '1000000000000000000' })
+            assert.equal(result.receipt.status, true, 'depositETH function failed')
+            assert.equal(await NFTEscrowInstance.buyerAddress(), FNFTBuyer, 'Buyer address does not match')
+        })
+        it('should allow seller to initiateDelivery to sell token', async()=> {
+            result = await NFTEscrowInstance.initiateDelivery({from: owner})
+            assert.equal(result.receipt.status, true, 'InitiateDelivery function failed')
+        })
+        it('should allow buyer to confirm delivery of the token', async()=>{
+            result = await NFTEscrowInstance.confirmDelivery({from: FNFTBuyer})
+            assert.equal(result.receipt.status, true, 'ConfirmDelivery function failed')
+            let res= await contractHandle.getPastEvents('allEvents', {
+                fromBlock: result.receipt.blockNumber,
+                toBlock: result.receipt.blockNumber
+            });
+            assert.equal(res[0].event, 'Approval', 'Approval event not emitted')
+            assert.equal(res[1].event, 'Transfer', 'Transfer event not emitted')
+        })
+        it('should verify the new owner address', async()=>{
+            result = await fractionalNFTInstance.balanceOf(owner) // ERC-721
+            assert.equal(result.toNumber(),0,'ERC-721 balance does not match')
+            result = await fractionalNFTInstance.balanceOf(FNFTBuyer) // ERC-721
+            assert.equal(result.toNumber(),1,'ERC-721 balance does not match')       
+            
+            result = await fractionalNFTInstance.ownerOf(0) 
+            assert.equal(result,FNFTBuyer, "Owner address does not match");
+        })
     })
 })
