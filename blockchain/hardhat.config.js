@@ -1,4 +1,4 @@
-require("solidity-coverage");
+// require("solidity-coverage");
 require("@nomiclabs/hardhat-truffle5");
 require("@nomiclabs/hardhat-waffle");
 

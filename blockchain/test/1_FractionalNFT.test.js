@@ -121,7 +121,7 @@ contract('FractionalNFT', async accounts => {
             result = await fractionalClaimInstance.funds();
             assert.equal(result.toString(), '1000000000000000000', 'Fund value does not match')
         })
-        it('should return the total supply of the token', async()=> {
+        it('should return the total supply of the token', async()	=> {
             result = await fractionalClaimInstance.supply();
             // console.log('result', result.toString());
             assert.equal(result.toString(), '4000000000000000000', 'Total supply does not match')
@@ -191,6 +191,8 @@ contract('FractionalNFT', async accounts => {
             //console.log('result', result.toNumber());//, "0", 'Token supply does not match');
             assert.equal(result.toNumber(), 0, 'Token supply does not match');
         })
+        
+        
         // now the ERC721 token can be transferred to another user/buyer
         it('should print the address of NFTEscrow', async()=>{
             console.log('NFTEscrow Address', NFTEscrowInstance.address);
@@ -214,7 +216,7 @@ contract('FractionalNFT', async accounts => {
             assert.equal(res[0].event, 'Approval', 'Approval event not emitted')
             assert.equal(res[1].event, 'Transfer', 'Transfer event not emitted')
         })
-        it('should allow buyer to deposite ehter to NFTEscrow contract', async() => {
+        it('should allow buyer to deposite ether to NFTEscrow contract', async() => {
             result = await NFTEscrowInstance.depositETH({from:FNFTBuyer, value: '1000000000000000000' })
             assert.equal(result.receipt.status, true, 'depositETH function failed')
             assert.equal(await NFTEscrowInstance.buyerAddress(), FNFTBuyer, 'Buyer address does not match')

@@ -52,7 +52,7 @@ const deployClaimContract = async (req,res) => {
         console.log('req -------->',req.body);
         logger.info('Inside deployClaimContract route');
         console.log('Inside deployClaimContract route');
-        let address = fnftServiceModule.deployClaimContract(req.body)
+        let address = await fnftServiceModule.deployClaimContract(req.body)
         if(address)
         {
             res.status(200).json(getSuccessJson(address))
@@ -68,7 +68,7 @@ const fundFNFTContract = async (req,res) => {
         console.log('req -------->',req.body);
         logger.info('Inside fundFNFTContract route');
         console.log('Inside fundFNFTContract route');
-        const receipt = fnftServiceModule.fundFNFTContract(req.body.amtInEth)
+        const receipt = await fnftServiceModule.fundFNFTContract(req.body.amtInEth)
         res.status(200).json(getSuccessJson(receipt.transactionHash))
     } catch(error){
         logger.error(`Excption occoured in route fundFNFTContract route : ${error.stack}`)
@@ -124,7 +124,7 @@ const tokenAddressFromClaim = async (req,res) => {
 const approveFractionalClaim = async (req,res) => {
     logger.info(`inside approveFractionalClaim route`)
     try {
-        let result = await fnftServiceModule.approveFractionalClaimForFNFT(req.body.approvedAmtInEth)
+        let result = await fnftServiceModule.approveFractionalClaimForFNFT(req.body.owner,req.body.approvedAmtInEth)
         if(result.status)
             logger.info(`approval given to contract`)
             res.status(200).json(getSuccessJson(result.transactionHash)) 
@@ -135,7 +135,7 @@ const approveFractionalClaim = async (req,res) => {
 
 const tokenAllowanceFractionalClaim = async (req,res) => {
     try {
-        let allowance = await fnftServiceModule.getTokenAllowanceFromClaim(req.query.owner)
+        let allowance = await fnftServiceModule.getTokenAllowanceFromClaim(req.body.owner)
         res.status(200).json(getSuccessJson(allowance))
     } catch (error) {
         throw error
@@ -153,6 +153,84 @@ const claimFNFTTokens = async (req,res) => {
     }
 }
 
+const deployNFTEscrow = async (req,res) => {
+    logger.info(`inside deployNFTEscrow route`)
+    try{
+        let escrow = await fnftServiceModule.deployNFTEscrow(req.body.owner)
+        res.status(200).json(getSuccessJson(escrow))
+    }catch(error){
+        throw error
+    }
+}
+
+const approveEscrowNFT = async (req,res) => {
+    logger.info(`inside approveEscrowNFT route`)
+    try {  
+        let approval = await fnftServiceModule.approveEscrowNFT(req.body.owner,req.body.tokenId)
+        res.status(200).json(getSuccessJson(approval))
+    } catch (error) {
+        throw error
+    }   
+}
+
+const depositeFNFTtoFNFTEscrow = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.depositeFNFTtoFNFTEscrow(req.body.tokenId,req.body.owner)
+        if(result.status)
+        {
+            logger.info(`Deposited the NFT token to NFTEscrow account successfully`)
+            res.status(200).json(getSuccessJson(result.transactionHash))
+        }
+        else
+        {
+            logger.info(`No recepit reveived while depositing the NFT token to NFTEscrow account.`) 
+        }
+    } catch (error) {
+        
+       throw error 
+    }
+}
+
+const fundNFTEscrow = async (req,res) => {
+    try {
+        let fund = await fnftServiceModule.fundNFTEscrow(req.body.buyer,req.body.amtInEth)
+        if(fund.status)
+        {
+            logger.info(`Successfully Deposited ${req.body.amtInEth} ethers to NFTEscrow contract`)
+            res.status(200).json(getSuccessJson(fund.transactionHash))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const initiateDelivery = async (req,res) => {
+    try {
+        
+        let result = await fnftServiceModule.initiateDelivery(req.body.seller)
+        if(result.status)
+        {
+            logger.info(`Successfully initiated delivery to sell token.`)
+            res.status(200).json(getSuccessJson(result.transactionHash)) 
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const confirmNFTDeliveryByBuyer = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.confirmNFTDeliveryByBuyer(req.body.buyer)
+        if(result.status)
+        {
+            logger.info(`Delivery Confirmed by buyer.`)
+            res.status(200).json(getSuccessJson(result.transactionHash))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
 router.post('/createToken',createToken);
 router.post('/transferERC20Token',transferERC20Token);
 router.post('/deployClaimContract',deployClaimContract);
@@ -160,11 +238,20 @@ router.post('/fundFNFTContract',fundFNFTContract)
 router.post('/approveFractionalClaim',approveFractionalClaim)
 router.post('/claimFNFT',claimFNFTTokens)
 
+router.post('/deployNFTEscrow',deployNFTEscrow)
+router.post('/approveEscrowNFT',approveEscrowNFT)
+router.post('/depositeFNFTtoFNFTEscrow',depositeFNFTtoFNFTEscrow)
+router.post('/fundNFTEscrow',fundNFTEscrow)
+router.post('/confirmNFTDeliveryByBuyer',confirmNFTDeliveryByBuyer)
+router.post('/initiateDelivery',initiateDelivery)
+
 router.get('/FNFTClaimSupply',TotalFNFTClaimSupply)
 router.get('/claimStateOfToken',claimStateOfToken)
 router.get('/ownerAddressOfClaim',ownerAddressOfClaim)
 router.get('/nftAddressFromClaim',nftAddressFromClaim)
 router.get('/tokenAddressFromClaim',tokenAddressFromClaim)
 router.get('/tokenAllowance',tokenAllowanceFractionalClaim)
+
+
 
 module.exports = router;

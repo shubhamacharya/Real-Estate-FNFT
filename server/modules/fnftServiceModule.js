@@ -4,15 +4,33 @@ const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
 const FNFTokenJSON = require('../contractJSONs/FNFToken.json')
 const FractionalClaim = require('../contractJSONs/FractionalClaim.json')
 const utility = require('./utility');
-const deploy = require('./deploy')
+const {deploy,getWeb3Obj} = require('./deploy')
 
 let ownerAddress
 
-let web3,FractionalNFTAddress,FractionalNFTInstance;
+let FractionalNFTInstance,NFTEscrowInstance;
 let FractionalClaimInstance,FNFTokenInstance,FractionalNFT,FractionalNFTReceipt;
 
+let web3 
+
+const getTransactionObject = (fromAddress,value=0,gas='6721975') => {
+    return {
+        from: fromAddress,
+        value: web3.utils.toWei(web3.utils.BN(value)),
+        // gasPrice: 0,
+        gas: '6721975'
+      }
+}
+
 const deployContract = async (address) => {
-    [web3,FractionalNFT] = await deploy(process.env.FractionalNFT,address)
+    try{
+        web3 = await getWeb3Obj();
+        FractionalNFTInstance = await deploy(process.env.FractionalNFT,address)
+    }
+    catch(error)
+    {
+        throw error
+    }
 }
 
 const createToken = async function(reqBody){
@@ -22,15 +40,19 @@ const createToken = async function(reqBody){
         let transactioHash;
         ownerAddress = reqBody.address
         await deployContract(reqBody.address)
-        FractionalNFTInstance = new web3.eth.Contract(FractionalNFTJSON.abi)
-        FractionalNFTInstance.options.address = await getNFTContractAddress()
+        if(!FractionalNFTInstance.options.address)
+        {
+            throw Error("Fractional Instance Error")
+        }
+        //FractionalNFTInstance = new web3.eth.Contract(FractionalNFTJSON.abi)
+        //FractionalNFTInstance.options.address = await getNFTContractAddress()
         //console.log('============>', JSON.stringify(FractionalNFTInstance.methods));
         //logger.info(`contractInstance methods--${JSON.stringify(FractionalNFTInstance.methods)}`);
-        const transactionObject = {
-            from: reqBody.address,
-            // gasPrice: 0,
-            gas: '6721975'
-          };
+        // const transactionObject = {
+        //     from: reqBody.address,
+        //     // gasPrice: 0,
+        //     gas: '6721975'
+        //   };
 
         reqObj = {}
         reqObj.toAddress = reqBody.toAddress
@@ -38,7 +60,8 @@ const createToken = async function(reqBody){
         reqObj.totalNoOfFractions = reqBody.totalNoOfFractions
         console.log('reqObj-------',reqObj);
         
-        FractionalNFTReceipt = await FractionalNFTInstance.methods.mint(reqBody.toAddress,reqBody.tokenURI,reqBody.totalNoOfFractions).send(transactionObject)
+        FractionalNFTReceipt = await FractionalNFTInstance.methods.mint(reqBody.toAddress,reqBody.tokenURI,reqBody.totalNoOfFractions)
+                            .send(getTransactionObject(reqBody.address))
         transactioHash = FractionalNFTReceipt.transactionHash;
         logger.debug(`Transaction Receipt = ${FractionalNFTReceipt.transactionHash} Block Number= ${FractionalNFTReceipt.blockNumber}`)
         
@@ -68,7 +91,7 @@ const getFNFTContractAdress = async () => {
 }
 
 const getNFTContractAddress = async () => {
-    return await FractionalNFT.options.address
+    return await FractionalNFTInstance.options.address
 }
 
 const deployFNFTContract = async () => {
@@ -147,8 +170,8 @@ const transferERC20Token = async (reqBody) => {
     try {
         logger.info('method transferERC20 token');
         logger.info('reqBody',reqBody)
-        transferReceipt = await FNFTokenInstance.methods.transfer(reqBody.buyerAddress,reqBody.amountOfTokens)
-        .send({from : ownerAddress})
+        let transferReceipt = await FNFTokenInstance.methods.transfer(reqBody.buyerAddress,reqBody.amountOfTokens)
+        .send(getTransactionObject(ownerAddress))
         if(transferReceipt.status)
         {   
             logger.info('ERC20 tokens transfered successfully')
@@ -168,9 +191,10 @@ const deployClaimContract = async (reqBody) => {
     try {
         args.push(FractionalNFTInstance.options.address)
         args.push(web3.utils.BN(reqBody.tokenId))
-        let web3L
-        [web3L,FractionalClaimInstance] = await deploy(process.env.FractionalClaim,ownerAddress,params=args)
+        
+        FractionalClaimInstance = await deploy(process.env.FractionalClaim,ownerAddress,params=args)
         logger.info(`FractionalClaim contract loaded`);
+        return FractionalClaimInstance.options.address
     } catch (error) {
         logger.error(`Exception occurred in deployClaimContract method :: ${error.stack}`);
         throw error;
@@ -182,18 +206,14 @@ const deployClaimContract = async (reqBody) => {
 const fundFNFTContract = async (amountInEth) => {
     logger.info('Inside fundFNFTContract method');
     console.log('Inside fundFNFTContract method');
-    const transactionObject = {
-        from: ownerAddress,
-        value: web3.utils.toWei(web3.utils.BN(amountInEth)),
-        gas: '6721975'
-      };
+    
     try
     {
         logger.info('transfering amount');
         console.log('transfering amount');
         
         let result = await FractionalClaimInstance.methods.fund(FNFTokenInstance.options.address)
-                    .send(transactionObject)
+                    .send(getTransactionObject(fromAddress=ownerAddress,value=amountInEth))
         
         if(result.status && result.events.funded)
         {
@@ -240,16 +260,16 @@ const getTokenAddressFromClaim = async () => {
 }
 
 //Add Owner As Parameter in below Function
-const approveFractionalClaimForFNFT = async (amountInEth) => {
+const approveFractionalClaimForFNFT = async (owner,amountInEth) => {
     let amt = web3.utils.toWei(amountInEth,'ether')
     let result = await FNFTokenInstance.methods.approve(FractionalClaimInstance.options.address,amt)
-                    .send({from:ownerAddress})
+                    .send(getTransactionObject(fromAddress=owner))
     return result
 }
 
 const getTokenAllowanceFromClaim = async (owner) => {
-    console.log(owner);
     let result = await FNFTokenInstance.methods.allowance(owner,FractionalClaimInstance.options.address).call()
+    console.log(result)
     return web3.utils.fromWei(result,'ether')
 }
 
@@ -260,13 +280,102 @@ const claimFNFTTokens = async (reqBody) => {
     let tokenOwner = reqBody.body.tokenOwner
 
     return await FractionalClaimInstance.methods.claim(FNFTokenInstance.options.address,amountOfTokens)
-                .send({from:tokenOwner})
+                .send(getTransactionObject(fromAddress=tokenOwner))
+}
+
+const deployNFTEscrow = async (address) => {
+    logger.info('Deployer Address',address)
+    logger.info('deploying NFTEscrow contract');
+    try{
+        NFTEscrowInstance = await deploy(process.env.NFTEscrow,address)
+        logger.info(`NFTEscrow contract deployed`);
+        return NFTEscrowInstance.options.address
+    }
+    catch(error)
+    {
+        console.error(error)
+        logger.info(`NFTEscrow contract deployment error`)
+    }
+}
+
+const approveEscrowNFT = async (owner,tokenId) => {
+    try{
+        logger.info(`Approving NFT for contract NFTEscrow`)
+        let res = await FractionalNFTInstance.methods.approve(NFTEscrowInstance.options.address,tokenId)
+        .send(getTransactionObject(from=owner))
+        if(res.status)
+        {
+            logger.info(`Approved NFT for contract NFTEscrow`)
+            return res.transactionHash;
+        }
+        else
+        {
+            logger.error(`Error while Approving NFT for contract NFTEscrow`)
+        }
+    }
+    catch(error)
+    {
+        throw error
+    }
+}
+
+const depositeFNFTtoFNFTEscrow = async (tokenId,owner) => {
+    logger.info(`Depositing the NFT token to NFTEscrow account`)
+    let nftAddress = await getNFTContractAddress();
+
+    console.log("NFT Address in depositeFNFTtoFNFTEscrow ",nftAddress)
+    console.log("NFT Escrow Address in depositeFNFTtoFNFTEscrow ",NFTEscrowInstance.options.address)
+    try{
+        let res = await NFTEscrowInstance.methods.depositNFT(nftAddress,tokenId)
+        .send(getTransactionObject(fromAddress=owner))
+        //console.log(res);
+        return res
+    }
+    catch(error)
+    {
+        console.log("Error in depositeFNFT ",error)
+    }
+}
+
+const fundNFTEscrow = async (buyer,amtInEth) => {
+    logger.info(`Depositing ${amtInEth} ether to NFTEscrow contract`)
+    let res = await NFTEscrowInstance.methods.depositETH()
+            .send(getTransactionObject(from=buyer,value=amtInEth))
+    return res
+}
+
+const initiateDelivery = async (seller) => {
+    try
+    {
+        logger.info(`Initiating delivery to sell token.`)
+        let res = await NFTEscrowInstance.methods.initiateDelivery()
+                .send(getTransactionObject(fromAddress=seller))
+        return res
+    }
+    catch(error)
+    {
+        throw error
+    }
+}
+
+const confirmNFTDeliveryByBuyer = async (buyer) => {
+    try
+    {
+        logger.info(`Getting confirmation of delivery from buyer.`)
+        let res = await NFTEscrowInstance.methods.confirmDelivery()
+                    .send(getTransactionObject(fromAddress=buyer))
+        return res
+    }catch(error)
+    {
+        throw error
+    }
 }
 
 module.exports = {
     createToken,
     getFNFTContractAdress,
     deployFNFTContract,
+    getNFTContractAddress,
     getNFTTokenId,
     getTotalNFTSupply,
     getTotalFNFTSupply,
@@ -294,5 +403,12 @@ module.exports = {
     getTokenAddressFromClaim,
     approveFractionalClaimForFNFT,
     getTokenAllowanceFromClaim,
-    claimFNFTTokens
+    claimFNFTTokens,
+
+    deployNFTEscrow,
+    approveEscrowNFT,
+    depositeFNFTtoFNFTEscrow,
+    fundNFTEscrow,
+    initiateDelivery,
+    confirmNFTDeliveryByBuyer
 };

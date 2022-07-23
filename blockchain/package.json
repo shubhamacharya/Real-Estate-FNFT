@@ -32,8 +32,9 @@
     "ganache": "^7.2.0",
     "ganache-cli": "^6.12.2",
     "mocha": "^10.0.0",
+    "package.json": "^0.0.0",
     "solc": "^0.8.14-fixed",
-    "truffle-hdwallet-provider": "^1.0.17",
+    "truffle-hdwallet-provider": "^1.0.6",
     "util": "^0.12.4",
     "web3": "^1.7.3"
   },
@@ -47,7 +48,7 @@
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.6.9",
     "hardhat": "^2.9.9",
-    "solidity-coverage": "^0.7.21"
+    "solidity-coverage": "^0.6.7"
   },
   "bugs": {
     "url": "https://github.com/shubhamacharya/Real-Estate-FNFT/issues"

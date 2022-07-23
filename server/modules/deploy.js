@@ -1,9 +1,11 @@
 const walletIns = require(`./walletProvider`);
 const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
 const FractionalClaimJSON = require('../contractJSONs/FractionalClaim.json')
+const EscrowNFTJSON = require('../contractJSONs/NFTEscrow.json')
 const path = require('path');
 const fileSys = require('fs');
 const solc = require('solc');
+const contract = require('truffle-contract/lib/contract/index');
 
 function findImports(relativePath) {
     //To solve error of file import callback
@@ -55,12 +57,18 @@ const CompileContract = (contractName) => {
   }    
 }
 
+const getWeb3Obj = async () => {
+  return await walletIns.getWalletProvider();
+}
+
 const deploy = async (contractName,account,params=[]) => {
-    const web3 = await walletIns.getWalletProvider() 
-    let abi,bytecode,contractInstance;
+    const web3 = await getWeb3Obj() 
+    
+    let contractInstance;
+    let abi,bytecode
     
     try {
-      if(!FractionalNFTJSON || !FractionalClaimJSON)
+      if(!FractionalNFTJSON || !FractionalClaimJSON || !EscrowNFTJSON)
       {
         [abi,bytecode] = CompileContract(contractName)
       }
@@ -76,7 +84,7 @@ const deploy = async (contractName,account,params=[]) => {
 
             console.log(`${contractName} deployed to ${contractInstance.options.address}`);
     
-            return [web3,contractInstance]
+            return contractInstance
 
           case "FractionalClaim.sol":
             params[1] = web3.utils.toNumber(params[1])
@@ -90,7 +98,17 @@ const deploy = async (contractName,account,params=[]) => {
                             .send({gas: '10000000',from:account});
 
             console.log(`${contractName} deployed to ${contractInstance.options.address}`);
-            return [web3,contractInstance]
+            return contractInstance
+          
+          case "NFTEscrow.sol":
+            console.log(`Attempting to deploy ${contractName} from account ${account}`);
+            contractInstance = await new web3.eth.Contract(EscrowNFTJSON.abi)
+                            .deploy({
+                              data: EscrowNFTJSON.bytecode
+                            })
+                            .send({gas: '10000000',from:account})
+            console.log(`${contractName} deployed to ${contractInstance.options.address}`);
+            return contractInstance
         }
       }
     }
@@ -100,4 +118,4 @@ const deploy = async (contractName,account,params=[]) => {
    
 }
 
-module.exports = deploy
+module.exports = {deploy,getWeb3Obj}
