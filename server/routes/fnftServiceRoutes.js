@@ -3,6 +3,7 @@ const logger = require('../config/winston');
 const router = express.Router();
 const fnftServiceModule = require('../modules/fnftServiceModule');
 
+
 const getSuccessJson = function(data) 
 {
     return {

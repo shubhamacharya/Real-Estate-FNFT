@@ -1,9 +1,7 @@
 const logger = require('../config/winston');
-//const walletIns = require('./walletProvider');
 const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
 const FNFTokenJSON = require('../contractJSONs/FNFToken.json')
 const FractionalClaim = require('../contractJSONs/FractionalClaim.json')
-const utility = require('./utility');
 const {deploy,getWeb3Obj} = require('./deploy')
 
 let ownerAddress
