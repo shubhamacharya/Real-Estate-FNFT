@@ -1,6 +1,7 @@
 // require("solidity-coverage");
 require("@nomiclabs/hardhat-truffle5");
 require("@nomiclabs/hardhat-waffle");
+require("solidity-docgen")
 
 module.exports = {
     solidity: "0.8.7",

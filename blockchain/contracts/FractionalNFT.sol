@@ -1,71 +1,35 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract FractionalNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Ownable, ERC721Burnable 
-{
-    using Counters for Counters.Counter;
+contract FractionalNFT is ERC20, ERC20Burnable, Ownable {
+    // struct _fnft{
+    //     uint256 tokenId;
+    //     address fractionalToken;
+    // }
+    uint public reNFTId;
 
-    Counters.Counter private _tokenIdCounter;
+    // mapping(uint256 => _fnft) public FNFT;
+    
+    event FNFTCreated(uint tokenId, string name, string symbol, uint256 totalSupply);
 
-    struct _fnft{
-        uint256 tokenId;
-        address fractionalToken;
+    constructor() ERC20("FractionalNFT", "FNFT") {}
+
+    function mint(address to, uint256 amount, uint256 _tokenId) public onlyOwner {
+        _mint(to, amount * 1000000000000000000);
+        // _fnft memory fnft;
+        // fnft.tokenId = _tokenId;
+        // fnft.fractionalToken = address(this);
+        // FNFT[_tokenId]  = fnft;
+        reNFTId = _tokenId;
+        emit FNFTCreated(_tokenId, super.name(), super.symbol(), amount);
     }
 
-    mapping(uint256 => _fnft) public FNFT;
-    // Constructor of ERC721 requires Name of NFT and Symbol of NFT
-    constructor() ERC721("FractionalNFT", "FNFT") {}  
-
-    // _beforeTokenTransfer used by ERC-721 internally in _mint function
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal whenNotPaused override(ERC721, ERC721Enumerable)
-    {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory)
-    {
-        return super.tokenURI(tokenId);
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721Enumerable) returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-
-    function mint(address _to, string memory tokenURI_, uint256 _totalFractionalTokens) external onlyOwner() 
-    {
-        _safeMint(_to, _tokenIdCounter.current());
-        _setTokenURI(_tokenIdCounter.current(), tokenURI_);
-
-        //Create a ERC20 Token Contract for this newly minted NFT
-        FNFToken _fnftoken = new FNFToken();                                      //initialize
-        _fnftoken.mint(msg.sender, _totalFractionalTokens);   //now mint the fractional tokens and send it to the owner of this NFT           
-        _fnft memory fnft;                                                          //constructor
-        fnft.tokenId = _tokenIdCounter.current();                           
-        fnft.fractionalToken = address(_fnftoken);
-        FNFT[_tokenIdCounter.current()]  = fnft;                                    //bind the fractional token address to this NFT token just minted
-        _tokenIdCounter.increment();
-    }
-}
-
-contract FNFToken is ERC20, ERC20Burnable, Ownable {
-    constructor() ERC20("FNFToken", "FNT") {}
-
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
-    }
+    //  function transferFNFToken(address _to, uint256 _tokenURI, uint256 _amount) onlyOwner private //isNFTOwner(_tokenURI)
+    // {
+    //     FNFToken _fnftoken = FNFToken(FNFT[_tokenURI].fractionalToken);
+    //     _fnftoken.transfer(_to, _amount * 1000000000000000000);
+    // }
 }

@@ -1,7 +1,10 @@
 const walletIns = require(`./walletProvider`);
+
+const RealEstateNFTJSON = require('../contractJSONs/RealEstateNFT.json')
 const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
 const FractionalClaimJSON = require('../contractJSONs/FractionalClaim.json')
 const EscrowNFTJSON = require('../contractJSONs/NFTEscrow.json')
+
 const path = require('path');
 const fileSys = require('fs');
 const solc = require('solc');
@@ -63,12 +66,12 @@ const getWeb3Obj = async () => {
 
 const deploy = async (contractName,account,params=[]) => {
     const web3 = await getWeb3Obj() 
-    
+    console.log("deployer Address ==> ",account)
     let contractInstance;
     let abi,bytecode
     
     try {
-      if(!FractionalNFTJSON || !FractionalClaimJSON || !EscrowNFTJSON)
+      if(!RealEstateNFTJSON || !FractionalNFTJSON || !FractionalClaimJSON || !EscrowNFTJSON)
       {
         [abi,bytecode] = CompileContract(contractName)
       }
@@ -76,29 +79,38 @@ const deploy = async (contractName,account,params=[]) => {
       {
         switch(contractName)
         {
+          case "RealEstateNFT.sol":
+            console.log(`Attempting to deploy ${contractName} from account ${account}`);
+            contractInstance = await new web3.eth.Contract(RealEstateNFTJSON.abi)
+                            .deploy({data:RealEstateNFTJSON.bytecode})
+                            .send({gas:'6721975',from:account});
+
+            console.log(`${contractName} deployed at ${contractInstance.options.address}`);
+            
+            return contractInstance.options.address
+          
           case "FractionalNFT.sol":
             console.log(`Attempting to deploy ${contractName} from account ${account}`);
             contractInstance = await new web3.eth.Contract(FractionalNFTJSON.abi)
-                            .deploy({data:FractionalNFTJSON.bytecode})
-                            .send({gas: '10000000',from:account});
+                          .deploy({data:FractionalNFTJSON.bytecode})
+                          .send({gas:'6721975',from:account});
 
-            console.log(`${contractName} deployed to ${contractInstance.options.address}`);
+            console.log(`${contractName} deployed at ${contractInstance.options.address}`);
     
-            return contractInstance
-
+            return contractInstance.options.address
+          
           case "FractionalClaim.sol":
             params[1] = web3.utils.toNumber(params[1])
-            console.log(params);
+            //console.log('-----> param ', params[1]);
             console.log(`Attempting to deploy ${contractName} from account ${account}`);
             contractInstance = await new web3.eth.Contract(FractionalClaimJSON.abi)
                             .deploy({
-                              data:FractionalClaimJSON.bytecode,
+                              data: FractionalClaimJSON.bytecode,
                               arguments:params
                             })
-                            .send({gas: '10000000',from:account});
-
-            console.log(`${contractName} deployed to ${contractInstance.options.address}`);
-            return contractInstance
+                            .send({gas : 9721975,from:account});
+              console.log(`${contractName} deployed to ${contractInstance.options.address}`);
+              return contractInstance.options.address
           
           case "NFTEscrow.sol":
             console.log(`Attempting to deploy ${contractName} from account ${account}`);
@@ -106,16 +118,15 @@ const deploy = async (contractName,account,params=[]) => {
                             .deploy({
                               data: EscrowNFTJSON.bytecode
                             })
-                            .send({gas: '10000000',from:account})
+                            .send({gas:'6721975',from:account})
             console.log(`${contractName} deployed to ${contractInstance.options.address}`);
-            return contractInstance
+            return contractInstance.options.address
         }
       }
     }
     catch (error) {
-        console.log(error)   
+      console.log(error)   
     }
-   
 }
 
 module.exports = {deploy,getWeb3Obj}
