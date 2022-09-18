@@ -83,7 +83,7 @@ const deploy = async (contractName,account,params=[]) => {
             console.log(`Attempting to deploy ${contractName} from account ${account}`);
             contractInstance = await new web3.eth.Contract(RealEstateNFTJSON.abi)
                             .deploy({data:RealEstateNFTJSON.bytecode})
-                            .send({gas:'6721975',from:account});
+                            .send({gas:'350000000',from:account});
 
             console.log(`${contractName} deployed at ${contractInstance.options.address}`);
             
@@ -93,7 +93,7 @@ const deploy = async (contractName,account,params=[]) => {
             console.log(`Attempting to deploy ${contractName} from account ${account}`);
             contractInstance = await new web3.eth.Contract(FractionalNFTJSON.abi)
                           .deploy({data:FractionalNFTJSON.bytecode})
-                          .send({gas:'6721975',from:account});
+                          .send({gas:'350000000',from:account});
 
             console.log(`${contractName} deployed at ${contractInstance.options.address}`);
     
@@ -108,7 +108,7 @@ const deploy = async (contractName,account,params=[]) => {
                               data: FractionalClaimJSON.bytecode,
                               arguments:params
                             })
-                            .send({gas : 9721975,from:account});
+                            .send({gas : '350000000',from:account});
               console.log(`${contractName} deployed to ${contractInstance.options.address}`);
               return contractInstance.options.address
           
@@ -118,7 +118,7 @@ const deploy = async (contractName,account,params=[]) => {
                             .deploy({
                               data: EscrowNFTJSON.bytecode
                             })
-                            .send({gas:'6721975',from:account})
+                            .send({gas:'350000000',from:account})
             console.log(`${contractName} deployed to ${contractInstance.options.address}`);
             return contractInstance.options.address
         }

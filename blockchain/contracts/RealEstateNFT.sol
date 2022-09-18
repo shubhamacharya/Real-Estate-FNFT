@@ -63,6 +63,6 @@ contract RealEstateNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, 
         _setTokenURI(_tokenIdCounter.current(), tokenURI_);
         NFT[tokenURI_] = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        emit NFTTokenCreated(_tokenIdCounter.current(), tokenURI_, _to);
+        emit NFTTokenCreated(NFT[tokenURI_], tokenURI_, _to);
     }
 }

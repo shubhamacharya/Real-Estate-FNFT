@@ -276,13 +276,15 @@ const transferERC20Token = async (reqBody) => {
     try {
         logger.info('method transferERC20 token');
         logger.info('reqBody',reqBody)
-
+        //console.log("FractionalNFTInstance ===> ",FractionalNFTInstance);
         let transactionInfo = new transactionDetails()
         let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+        //console.log("Temp Rec \n"+tempRec);
         let contractAddress = tempRec['FractionalNFT']
         let ownerAddress = tempRec['ownerAddress']
 
         FractionalNFTInstance = await loadFractionalNFTContract(contractAddress)
+        
         let transferReceipt = await FractionalNFTInstance.methods.transfer(reqBody.buyerAddress,reqBody.amountOfTokens)
         .send(getTransactionObject(ownerAddress))
 
@@ -306,8 +308,6 @@ const transferERC20Token = async (reqBody) => {
        throw error 
     }
 }
-
-
 
 const fundFNFTContract = async (reqBody) => {
     logger.info('Inside fundFNFTContract method');
@@ -372,7 +372,7 @@ const getTokenAllowanceFromClaim = async (reqBody) => {
     let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec();
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     loadFractionalClaim(tempRec['fractionalClaim'])
-    let result = await FractionalNFTInstance.methods.allowance(reqBody.fractionOwner,FractionalClaimInstance.options.address).call()
+    let result = await FractionalNFTInstance.methods.allowance(reqBody.owner,tempRec['fractionalClaim']).call()
     console.log(result)
     return web3.utils.fromWei(result,'ether')
 }
