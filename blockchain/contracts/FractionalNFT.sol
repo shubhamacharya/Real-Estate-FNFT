@@ -18,7 +18,7 @@ contract FractionalNFT is ERC20, ERC20Burnable, Ownable {
     constructor() ERC20("FractionalNFT", "FNFT") {}
 
     function mint(address to, uint256 amount, uint256 _tokenId) public onlyOwner {
-        _mint(to, amount * 1000000000000000000);
+        _mint(to, amount /* 1000000000000000000*/);
         // _fnft memory fnft;
         // fnft.tokenId = _tokenId;
         // fnft.fractionalToken = address(this);

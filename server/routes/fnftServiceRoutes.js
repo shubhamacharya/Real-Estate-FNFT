@@ -33,6 +33,96 @@ const createToken = async function(req, res) {
     }
 };
 
+const getNFTTokenId = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNFTTokenId(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNFTContractAddress = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNFTContractAddress(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getTotalNFTSupply = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getTotalNFTSupply(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNFTBalance = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNFTBalance(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNameOfNFT = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNameOfNFT(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getSymbolOfNFT = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getSymbolOfNFT(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getOwnerOfNFTContract = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getOwnerOfNFTContract(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getOwnerOfNFTByIndex = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getOwnerOfNFTByIndex(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNFTTokenURI = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNFTTokenURI(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNFTTokenOfOwnerByIndex = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getNFTTokenOfOwnerByIndex(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+}
+
 const fractionToken = async (req,res) => {
     try {
         console.log('req------->>',req.body);
@@ -42,6 +132,51 @@ const fractionToken = async (req,res) => {
     } catch (error) {
         logger.error(`Exception occurred in method fractionToken: ${error.stack}`);
         res.status(500).json(getErrorJson(error));
+    }
+}
+
+const getFNFTContractAdress = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getFNFTContractAdress(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getTotalFNFTSupply = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getTotalFNFTSupply(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getNameOfFNFT = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getNameOfFNFT(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getSymbolOfFNFT = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getSymbolOfFNFT(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getOwnerOfFNFT = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getOwnerOfFNFT(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
     }
 }
 
@@ -87,7 +222,16 @@ const fundFNFTContract = async (req,res) => {
     }
 }
 
-const TotalFNFTClaimSupply = async (req,res) => {
+const getFundedAmt = async (req,res) => {
+    try {
+        let result = await fnftServiceModule.getFundedAmt(req.body)
+        res.status(200).json(getSuccessJson(result))
+    } catch (error) {
+        throw error
+    }
+} 
+
+const getTotalFNFTClaimSupply = async (req,res) => {
     try {
         let result = await fnftServiceModule.getTotalFNFTClaimSupply(req.body)
         res.status(200).json(getSuccessJson(result))
@@ -96,18 +240,18 @@ const TotalFNFTClaimSupply = async (req,res) => {
     }
 }
 
-const claimStateOfToken = async (req,res) => {
+const getclaimStateOfToken = async (req,res) => {
     try {
-        let state = await fnftServiceModule.getClaimStateOfToken()
+        let state = await fnftServiceModule.getClaimStateOfToken(req.body)
         res.status(200).json(getSuccessJson(state))
     } catch (error) {
         throw error
     }
 }
 
-const ownerAddressOfClaim = async (req,res) => {
+const getownerAddressOfClaim = async (req,res) => {
     try{
-        let owner = await fnftServiceModule.getownerAddressOfClaim()
+        let owner = await fnftServiceModule.getownerAddressOfClaim(req.body)
         res.status(200).json(getSuccessJson(owner))
     }catch(error)
     {
@@ -115,18 +259,18 @@ const ownerAddressOfClaim = async (req,res) => {
     }
 }
 
-const nftAddressFromClaim = async (req,res) => {
+const getnftAddressFromClaim = async (req,res) => {
     try{
-        let nftAddress = await fnftServiceModule.getnftAddressFromClaim()
+        let nftAddress = await fnftServiceModule.getnftAddressFromClaim(req.body)
         res.status(200).json(getSuccessJson(nftAddress))
     }catch(error){
         throw error
     }
 }
 
-const tokenAddressFromClaim = async (req,res) => {
+const getTokenAddressFromClaim = async (req,res) => {
     try{
-        let tokenAddress = await fnftServiceModule.getTokenAddressFromClaim()
+        let tokenAddress = await fnftServiceModule.getTokenAddressFromClaim(req.body)
         res.status(200).json(getSuccessJson(tokenAddress))
     }catch(error){
         throw error
@@ -145,9 +289,18 @@ const approveFractionalClaim = async (req,res) => {
     }
 }
 
-const tokenAllowanceFractionalClaim = async (req,res) => {
+const getTokenAllowanceFromClaim = async (req,res) => {
     try {
         let allowance = await fnftServiceModule.getTokenAllowanceFromClaim(req.body)
+        res.status(200).json(getSuccessJson(allowance))
+    } catch (error) {
+        throw error
+    }
+}
+
+const getFNFTBalance = async (req,res) => {
+    try {
+        let allowance = await fnftServiceModule.getFNFTBalance(req.body)
         res.status(200).json(getSuccessJson(allowance))
     } catch (error) {
         throw error
@@ -158,8 +311,8 @@ const claimFNFTTokens = async (req,res) => {
     logger.info(`inside claimFNFTToken route`)
     try {
         let claim = await fnftServiceModule.claimFNFTTokens(req.body)
-        if(claim.status)
-            res.status(200).json(getSuccessJson(claim.transactionHash))
+        if(claim)
+            res.status(200).json(getSuccessJson(claim))
     } catch (error) {
         throw error
     }
@@ -241,20 +394,35 @@ router.post('/fundFNFTContract',fundFNFTContract)
 router.post('/approveFractionalClaim',approveFractionalClaim)
 router.post('/claimFNFT',claimFNFTTokens)
 
-//router.post('/deployNFTEscrow',deployNFTEscrow)
 router.post('/addNFTForSell',addNFTForSell)
 router.post('/depositeFNFTtoFNFTEscrow',depositeFNFTtoFNFTEscrow)
 router.post('/fundNFTEscrow',fundNFTEscrow)
 router.post('/confirmNFTDeliveryByBuyer',confirmNFTDeliveryByBuyer)
 router.post('/initiateDelivery',initiateDelivery)
 
-router.get('/FNFTClaimSupply',TotalFNFTClaimSupply)
-router.get('/claimStateOfToken',claimStateOfToken)
-router.get('/ownerAddressOfClaim',ownerAddressOfClaim)
-router.get('/nftAddressFromClaim',nftAddressFromClaim)
-router.get('/tokenAddressFromClaim',tokenAddressFromClaim)
-router.get('/tokenAllowanceFractionalClaim',tokenAllowanceFractionalClaim)
+router.get('/getnftAddressFromClaim',getnftAddressFromClaim)
+router.get('/getTokenAddressFromClaim',getTokenAddressFromClaim)
+router.get('/getTokenAllowanceFromClaim',getTokenAllowanceFromClaim)
+router.get('/getclaimStateOfToken',getclaimStateOfToken)
+router.get('/getTotalFNFTClaimSupply',getTotalFNFTClaimSupply)
+router.get('/getownerAddressOfClaim',getownerAddressOfClaim)
+router.get('/getFNFTBalance',getFNFTBalance)
+router.get('/getNFTTokenId',getNFTTokenId)
+router.get('/getNFTContractAddress',getNFTContractAddress)
+router.get('/getTotalNFTSupply',getTotalNFTSupply)
+router.get('/getNFTBalance',getNFTBalance)
+router.get('/getNameOfNFT',getNameOfNFT)
+router.get('/getSymbolOfNFT',getSymbolOfNFT)
+router.get('/getOwnerOfNFTContract',getOwnerOfNFTContract)
+router.get('/getNFTTokenURI',getNFTTokenURI)
+router.get('/getFNFTContractAdress',getFNFTContractAdress)
+router.get('/getTotalFNFTSupply',getTotalFNFTSupply)
+router.get('/getNameOfFNFT',getNameOfFNFT)
+router.get('/getSymbolOfFNFT',getSymbolOfFNFT)
+router.get('/getOwnerOfFNFT',getOwnerOfFNFT)
+router.get('/getFundedAmt',getFundedAmt)
 
-
+router.get('/getOwnerOfNFTByIndex',getOwnerOfNFTByIndex)
+router.get('/getNFTTokenOfOwnerByIndex',getNFTTokenOfOwnerByIndex)
 
 module.exports = router;
