@@ -386,6 +386,84 @@ const confirmNFTDeliveryByBuyer = async (req,res) => {
     }
 }
 
+const cancelAtNFT = async(req,res) => {
+    try {
+        let cancel = await fnftServiceModule.cancelAtNFT(req.body)
+        if(cancel)
+        {
+            logger.info(`NFT canceled by Owner.`)
+            res.state(200).json(getSuccessJson(cancel))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const cancelBeforeDelivery = async(req,res) => {
+    try{
+        let cancelDelivery = await fnftServiceModule.cancelBeforeDelivery(req.body)
+        if(cancelDelivery)
+        {
+            logger.info(`NFT deal cancel before delivery by ${req.body.user}`)
+            res.state(200).json(getSuccessJson(cancelDelivery))
+        }
+    }
+    catch(error)
+    {
+        throw error
+    }
+}
+
+const getEscrowNFTBuyer = async (req,res) => {
+    try {
+        let escrowBuyer = await fnftServiceModule.getEscrowNFTBuyer(req.body)
+        if(escrowBuyer)
+        {
+            res.state(200).json(getSuccessJson(escrowBuyer))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const getEscrowNFTSeller = async (req,res) => {
+    try {
+        let escrowSeller = await fnftServiceModule.getEscrowNFTSeller(req.body)
+        if(escrowSeller)
+        {
+            res.state(200).json(getSuccessJson(escrowSeller))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const getEscrowNFTBalance = async (req,res) => {
+    try {
+        let escrowBal = await fnftServiceModule.getEscrowNFTBalance(req.body)
+        if(escrowBal)
+        {
+            res.state(200).json(getSuccessJson(escrowBal))
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
+const getEscrowNFTState = async (req,res) => {
+    try{
+        let state = await fnftServiceModule.getEscrowNFTState(req.body)
+        if(state)
+        {
+            res.state(200).json(getSuccessJson(state))
+        }
+    }
+    catch(error)
+    {
+        throw error
+    }
+}
+
 router.post('/createToken',createToken);
 router.post('/fractionToken',fractionToken);
 router.post('/transferERC20Token',transferERC20Token);
@@ -399,6 +477,8 @@ router.post('/depositeFNFTtoFNFTEscrow',depositeFNFTtoFNFTEscrow)
 router.post('/fundNFTEscrow',fundNFTEscrow)
 router.post('/confirmNFTDeliveryByBuyer',confirmNFTDeliveryByBuyer)
 router.post('/initiateDelivery',initiateDelivery)
+router.post('/cancelAtNFT',cancelAtNFT)
+router.post('/cancelBeforeDelivery',cancelBeforeDelivery)
 
 router.get('/getnftAddressFromClaim',getnftAddressFromClaim)
 router.get('/getTokenAddressFromClaim',getTokenAddressFromClaim)
@@ -421,6 +501,10 @@ router.get('/getNameOfFNFT',getNameOfFNFT)
 router.get('/getSymbolOfFNFT',getSymbolOfFNFT)
 router.get('/getOwnerOfFNFT',getOwnerOfFNFT)
 router.get('/getFundedAmt',getFundedAmt)
+router.get('/getEscrowNFTBuyer',getEscrowNFTBuyer)
+router.get('/getEscrowNFTSeller',getEscrowNFTSeller)
+router.get('/getEscrowNFTBalance',getEscrowNFTBalance)
+router.get('/getEscrowNFTState',getEscrowNFTState)
 
 router.get('/getOwnerOfNFTByIndex',getOwnerOfNFTByIndex)
 router.get('/getNFTTokenOfOwnerByIndex',getNFTTokenOfOwnerByIndex)

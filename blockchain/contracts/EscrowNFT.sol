@@ -101,4 +101,16 @@ contract NFTEscrow is IERC721Receiver {
     function getBalance() public view returns (uint256 balance) {
         return address(this).balance;
     }
+
+    function getProjectState() public view returns (string memory) {
+        ProjectState temp = projectState;
+        if(temp == ProjectState.newEscrow) return "New Escrow";
+        else if(temp == ProjectState.nftDeposited) return "NFT Deposited";
+        else if(temp == ProjectState.cancelNFT) return "Cancel NFT";
+        else if(temp == ProjectState.ethDeposited) return "ETH Deposited";
+        else if(temp == ProjectState.canceledBeforeDelivery) return "Cancelled Before Delivery";
+        else if(temp == ProjectState.deliveryInitiated) return "Delivery Initiated";
+        else return "Delivered";
+        
+    }
 } 

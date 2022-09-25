@@ -651,6 +651,66 @@ const confirmNFTDeliveryByBuyer = async (reqBody) => {
     }
 }
 
+const cancelAtNFT = async (reqBody) => {
+    try {
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        logger.info(`Cancelling delivery from seller.`)
+        let NFTSellerCancelReceipt = await NFTEscrowInstance.methods.cancelAtNFT()
+                    .send(getTransactionObject(fromAddress=reqBody.seller))
+        return NFTSellerCancelReceipt.transactionHash
+    } catch (error) {
+        throw error
+    }
+}
+
+const cancelBeforeDelivery = async (reqBody) => {
+    try {
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        let cancelledBeforeReceipt = await NFTEscrowInstance.methods.cancelBeforeDelivery(reqBody.state)
+        .send(getTransactionObject(reqBody.user))
+        if(cancelledBeforeReceipt)
+        {
+            logger.info(`${reqBody.user} cancelled deal before delivery.`)
+            return cancelledBeforeReceipt.transactionHash
+        }
+
+    } catch (error) {
+        
+    }
+}
+
+const getEscrowNFTBuyer = async (reqBody) => {
+    try {
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        return await NFTEscrowInstance.methods.buyerAddress().call()
+    } catch (error) {
+        throw error
+    }
+}
+
+const getEscrowNFTSeller = async (reqBody) => {
+    try {
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        return await NFTEscrowInstance.methods.sellerAddress().call()
+    } catch (error) {
+        throw error
+    }
+}
+
+const getEscrowNFTBalance = async (reqBody) => {
+    try{
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        return await NFTEscrowInstance.methods.getBalance().call()  
+    }
+    catch(error) {
+        throw error
+    }
+}
 /*const getFNFTContractAdress = async (reqBody) => {
     let tempRec = Contract.findOne({tokenId:reqBody.tokenId})
     //loadRealEstateNFTContract(tempRec['FractionalNFT'])
@@ -698,5 +758,10 @@ module.exports = {
     addNFTForSell,
     fundNFTEscrow,
     initiateDelivery,
-    confirmNFTDeliveryByBuyer
+    confirmNFTDeliveryByBuyer,
+    cancelAtNFT,
+    cancelBeforeDelivery,
+    getEscrowNFTBuyer,
+    getEscrowNFTSeller,
+    getEscrowNFTBalance,
 };
