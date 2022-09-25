@@ -711,6 +711,16 @@ const getEscrowNFTBalance = async (reqBody) => {
         throw error
     }
 }
+
+const getEscrowNFTState = async (reqBody) => {
+    try {
+        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        return await NFTEscrowInstance.methods.projectState().call()
+    } catch (error) {
+        throw error
+    }
+}
 /*const getFNFTContractAdress = async (reqBody) => {
     let tempRec = Contract.findOne({tokenId:reqBody.tokenId})
     //loadRealEstateNFTContract(tempRec['FractionalNFT'])
@@ -764,4 +774,5 @@ module.exports = {
     getEscrowNFTBuyer,
     getEscrowNFTSeller,
     getEscrowNFTBalance,
+    getEscrowNFTState,
 };
