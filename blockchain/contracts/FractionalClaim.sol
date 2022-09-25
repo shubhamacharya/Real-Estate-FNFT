@@ -23,23 +23,23 @@ contract FractionalClaim {
 
     //this claims contract should only be allowed if the guy who started it owns this NFT token
     modifier isOwnerOfNFT(address _nftAddress, address _ownerAddress, uint256 _tokenID){
-        require(ERC721(_nftAddress).ownerOf(_tokenID) == _ownerAddress);
+        require(ERC721(_nftAddress).ownerOf(_tokenID) == _ownerAddress,"Caller is not owner of NFT.");
         _;
     }
 
 	modifier onlyOwner() {
-		require(msg.sender == ownerAddress);
+		require(msg.sender == ownerAddress,"Caller is not owner.");
 		_;
 	}
 
     modifier inClaimState(ClaimState _state) {
-		require(claimState == _state);
+		require(claimState == _state,"Not in claim state.");
 		_;
 	}
 
     modifier correctToken(address _token)
     {
-        require(_token == tokenAddress);
+        require(_token == tokenAddress,"Incorrect token Id or Address.");
         _;
     }
 

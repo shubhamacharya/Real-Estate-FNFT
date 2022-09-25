@@ -363,10 +363,10 @@ const initiateDelivery = async (req,res) => {
     try {
         
         let result = await fnftServiceModule.initiateDelivery(req.body)
-        if(result.status)
+        if(result)
         {
             logger.info(`Successfully initiated delivery to sell token.`)
-            res.status(200).json(getSuccessJson(result.transactionHash)) 
+            res.status(200).json(getSuccessJson(result)) 
         }
     } catch (error) {
         throw error
@@ -376,10 +376,10 @@ const initiateDelivery = async (req,res) => {
 const confirmNFTDeliveryByBuyer = async (req,res) => {
     try {
         let result = await fnftServiceModule.confirmNFTDeliveryByBuyer(req.body)
-        if(result.status)
+        if(result)
         {
             logger.info(`Delivery Confirmed by buyer.`)
-            res.status(200).json(getSuccessJson(result.transactionHash))
+            res.status(200).json(getSuccessJson(result))
         }
     } catch (error) {
         throw error

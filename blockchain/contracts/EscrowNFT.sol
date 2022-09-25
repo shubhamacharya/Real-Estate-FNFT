@@ -26,6 +26,7 @@ contract NFTEscrow is IERC721Receiver {
     }
     
     function depositNFT(address _NFTAddress, uint256 _TokenID) public inProjectState(ProjectState.newEscrow) onlySeller {
+        
         nftAddress = _NFTAddress;
         tokenID = _TokenID;
         ERC721(nftAddress).safeTransferFrom(msg.sender, address(this), tokenID);
@@ -73,22 +74,22 @@ contract NFTEscrow is IERC721Receiver {
 	}
 
 	modifier onlySeller() {
-		require(msg.sender == sellerAddress);
+		require(msg.sender == sellerAddress, "Caller address is not the seller.");
 		_;
 	}
 
 	modifier onlyBuyer() {
-		require(msg.sender == buyerAddress);
+		require(msg.sender == buyerAddress, "Caller address is not the buyer.");
 		_;
 	}
 	
 	modifier noDispute(){
-	    require(buyerCancel == false && sellerCancel == false);
+	    require(buyerCancel == false && sellerCancel == false, "Either buyer or seller cancled deal." );
 	    _;
 	}
 	
 	modifier BuyerOrSeller() {
-		require(msg.sender == buyerAddress || msg.sender == sellerAddress);
+		require(msg.sender == buyerAddress || msg.sender == sellerAddress,"Caller is not buyer or seller.");
 		_;
 	}
 	

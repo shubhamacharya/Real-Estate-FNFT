@@ -450,7 +450,7 @@ const addNFTForSell = async(reqBody) => {
         logger.info('method addNFTForSell invoked');
         logger.info('reqBody', reqBody);
 
-        let contractAddress = await deployContract(reqBody.deployerAddress,process.env.Escrow)
+        let contractAddress = await deployContract(reqBody.sellerAddress,process.env.Escrow)
         let tempRec = await Contract.findOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.sellerAddress}).exec()
 
         reqObj = {}
@@ -466,7 +466,7 @@ const addNFTForSell = async(reqBody) => {
         transactionInfo = new transactionDetails()
         tokenSellInfo = new tokenSellDetails()
         
-        /*transactionInfo.tokenId = reqObj.tokenId
+        transactionInfo.tokenId = reqObj.tokenId
         tokenSellInfo.tokenId = reqObj.tokenId
 
         tokenSellInfo.totalSupply = tokenSellInfo.quantity = await RealEstateNFTInstance.methods.totalSupply().call()
@@ -482,7 +482,7 @@ const addNFTForSell = async(reqBody) => {
         transactionInfo.txId = addForSellReceipt.transactionHash
 
         await transactionInfo.save()
-        await tokenSellInfo.save()*/
+        await tokenSellInfo.save()
         logger.info(`Added NFT for Sale`)
         return addForSellReceipt.transactionHash
     }
@@ -552,29 +552,38 @@ const depositeNFTtoNFTEscrow = async (reqBody) => {
     }
     catch(error)
     {
-        console.log("Error in depositeFNFT ",error)
+        console.log("---------------Error in depositeFNFT ",error)
+        throw error
     }
 }
 
 const fundNFTEscrow = async (reqBody) => {
     transactionInfo = new transactionDetails()
-
-    await loadNFTEscrowContract(reqBody.contractAddress)
-    logger.info(`Depositing ${reqBody.amtInEth} ether to NFTEscrow contract`)
-    let fundNFTEscrowReceipt = await NFTEscrowInstance.methods.depositETH()
-            .send(getTransactionObject(from=reqBody.buyer,value=reqBody.amtInEth))
-    
-    transactionInfo.tokenId = reqObj.tokenId
-    transactionInfo.to = fundNFTEscrowReceipt.to
-    transactionInfo.from = fundNFTEscrowReceipt.from
-    transactionInfo.txType = fundNFTEscrowReceipt.type
-    transactionInfo.blockNo = fundNFTEscrowReceipt.blockNumber
-    transactionInfo.eventData = fundNFTEscrowReceipt.events
-    transactionInfo.price = reqBody.amtInEth
-    transactionInfo.txId = fundNFTEscrowReceipt.transactionHash
-    
-    await transactionInfo.save()
-    return fundNFTEscrowReceipt
+    try
+    {
+        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+        await loadNFTEscrowContract(tempRec['escrowNFT'])
+        logger.info(`Depositing ${reqBody.amtInEth} ether to NFTEscrow contract`)
+        let fundNFTEscrowReceipt = await NFTEscrowInstance.methods.depositETH()
+                .send(getTransactionObject(from=reqBody.buyer,value=reqBody.amtInEth))
+        
+        transactionInfo.tokenId = reqObj.tokenId
+        transactionInfo.to = fundNFTEscrowReceipt.to
+        transactionInfo.from = fundNFTEscrowReceipt.from
+        transactionInfo.txType = fundNFTEscrowReceipt.type
+        transactionInfo.blockNo = fundNFTEscrowReceipt.blockNumber
+        transactionInfo.eventData = fundNFTEscrowReceipt.events
+        transactionInfo.price = reqBody.amtInEth
+        transactionInfo.txId = fundNFTEscrowReceipt.transactionHash
+        
+        await transactionInfo.save()
+        logger.info(`Deposited ${reqBody.amtInEth} ether to NFTEscrow contract`)
+        return fundNFTEscrowReceipt
+    }
+    catch(error)
+    {
+        throw error
+    }
 }
 
 const initiateDelivery = async (reqBody) => {
@@ -588,8 +597,8 @@ const initiateDelivery = async (reqBody) => {
                 .send(getTransactionObject(fromAddress=reqBody.seller))
         logger.info(`Initiated delivery to sell token.`)
         
-        //let tempRec = await Contract.findOne({escrowNFT : reqBody.contractAddress})
-        
+        //console.log("NFT DElivery Receipt ==> ",NFTDeliveryReceipt);
+
         transactionInfo.tokenId = tempRec.tokenId
         transactionInfo.to = NFTDeliveryReceipt.to
         transactionInfo.from = NFTDeliveryReceipt.from
@@ -599,7 +608,7 @@ const initiateDelivery = async (reqBody) => {
         transactionInfo.txId = NFTDeliveryReceipt.transactionHash
         
         await transactionInfo.save()
-        return NFTDeliveryReceipt.transactioHash
+        return NFTDeliveryReceipt.transactionHash
     }
     catch(error)
     {
@@ -610,17 +619,17 @@ const initiateDelivery = async (reqBody) => {
 const confirmNFTDeliveryByBuyer = async (reqBody) => {
     try
     {
-        await loadNFTEscrowContract(reqBody.contractAddress)
+        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId})
+        
+        await loadNFTEscrowContract(tempRec['escrowNFT']) 
+        await loadFractionalNFTContract(tempRec['RealEstateNFT'])
+        
         logger.info(`Getting confirmation of delivery from buyer.`)
         let NFTConfirmationReceipt = await NFTEscrowInstance.methods.confirmDelivery()
                     .send(getTransactionObject(fromAddress=reqBody.buyer))
         logger.info(`Delivery confirmed from buyer.`)
-        console.log(NFTConfirmationReceipt);
 
         let transactionInfo = new transactionDetails()
-        
-        let tempRec = await Contract.findOne({escrowNFT : reqBody.contractAddress})
-        await loadFractionalNFTContract(tempRec.RealEstateNFT)
         
         transactionInfo.tokenId = tempRec.tokenId
         transactionInfo.to = NFTConfirmationReceipt.to

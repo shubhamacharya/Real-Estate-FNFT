@@ -54,7 +54,7 @@ contract RealEstateNFT is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, 
 
     //is the caller of this function the owner of the NFT?
 	modifier isNFTOwner(uint256 _tokenURI) {
-		require(msg.sender == ownerOf(_tokenURI));
+		require(msg.sender == ownerOf(_tokenURI),"Caller is not owner of NFT.");
 		_;
 	}
 
