@@ -4,6 +4,10 @@ const nftDetails = mongoose.Schema({
         type: String,
         unique: true
     },
+    tokenImg: {
+        data: Buffer,
+        contentType: image
+    },
     tokenURI: {
         type: String,
         //required: true, // [true, "Please Enter the Token URI"],
