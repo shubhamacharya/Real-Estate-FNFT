@@ -1,5 +1,8 @@
 const mongoose = require('mongoose');
 const transactionDtails = mongoose.Schema({
+    contractAddress: {
+        type: String,
+    },
     tokenId: {
         type: String,
         //required: true, // [true, "Please Enter the Token URI"],

@@ -2,11 +2,13 @@ const mongoose = require('mongoose');
 const nftDetails = mongoose.Schema({
     tokenId: {
         type: String,
-        unique: true
+        //unique: true
+    },
+    name: {
+        type: String
     },
     tokenImg: {
-        data: Buffer,
-        contentType: image
+        type: String
     },
     tokenURI: {
         type: String,

@@ -2,12 +2,19 @@ const express = require('express');
 const logger = require('../config/winston');
 const router = express.Router();
 const fnftServiceModule = require('../modules/fnftServiceModule');
+const formidable = require('express-formidable');
 
-const getSuccessJson = function(data) 
+const nftDetails = require('../models/nftDetails');
+const transactionDetails =  require('../models/transactionDetails');
+const Contract = require('../models/contracts');
+const fnftDetails = require('../models/fnftDetails');
+const tokenSellDetails = require('../models/tokenSell')
+
+const getSuccessJson = function(rtnData) 
 {
     return {
         success: true,
-        data: data,
+        data: rtnData,
         message: ``
     };
 };
@@ -20,12 +27,12 @@ const getErrorJson = function(error) {
     };
 };
 
-const createToken = async function(req, res) {
+const createToken = async (req, res) => {
     try {
-        console.log('req------->>',req.body);
+        //console.log('req------->>',req);
         logger.info('Inside createToken route');
         console.log('Inside createToken route');
-        const serviceResponse = await fnftServiceModule.createToken(req.body);
+        let serviceResponse = await fnftServiceModule.createToken(req);
         res.status(200).json(getSuccessJson(serviceResponse));
     } catch (error) {
         logger.error(`Exception occurred in method createToken: ${error.stack}`);
@@ -44,7 +51,7 @@ const getNFTTokenId = async (req,res) => {
 
 const getNFTContractAddress = async (req,res) => {
     try {
-        let result = await fnftServiceModule.getNFTContractAddress(req.body)
+        let result = await fnftServiceModule.getNFTContractAddress(req.query)
         res.status(200).json(getSuccessJson(result))
     } catch (error) {
         throw error
@@ -53,7 +60,7 @@ const getNFTContractAddress = async (req,res) => {
 
 const getTotalNFTSupply = async (req,res) => {
     try {
-        let result = await fnftServiceModule.getTotalNFTSupply(req.body)
+        let result = await fnftServiceModule.getTotalNFTSupply(req.query)
         res.status(200).json(getSuccessJson(result))
     } catch (error) {
         throw error
@@ -80,7 +87,7 @@ const getNameOfNFT = async (req,res) => {
 
 const getSymbolOfNFT = async (req,res) => {
     try {
-        let result = await fnftServiceModule.getSymbolOfNFT(req.body)
+        let result = await fnftServiceModule.getSymbolOfNFT(req.query)
         res.status(200).json(getSuccessJson(result))
     } catch (error) {
         throw error
@@ -107,7 +114,7 @@ const getOwnerOfNFTByIndex = async (req,res) => {
 
 const getNFTTokenURI = async (req,res) => {
     try {
-        let result = await fnftServiceModule.getNFTTokenURI(req.body)
+        let result = await fnftServiceModule.getNFTTokenURI(req.query)
         res.status(200).json(getSuccessJson(result))
     } catch (error) {
         throw error
@@ -392,7 +399,7 @@ const cancelAtNFT = async(req,res) => {
         if(cancel)
         {
             logger.info(`NFT canceled by Owner.`)
-            res.state(200).json(getSuccessJson(cancel))
+            res.status(200).json(getSuccessJson(cancel))
         }
     } catch (error) {
         throw error
@@ -405,7 +412,7 @@ const cancelBeforeDelivery = async(req,res) => {
         if(cancelDelivery)
         {
             logger.info(`NFT deal cancel before delivery by ${req.body.user}`)
-            res.state(200).json(getSuccessJson(cancelDelivery))
+            res.status(200).json(getSuccessJson(cancelDelivery))
         }
     }
     catch(error)
@@ -419,7 +426,7 @@ const getEscrowNFTBuyer = async (req,res) => {
         let escrowBuyer = await fnftServiceModule.getEscrowNFTBuyer(req.body)
         if(escrowBuyer)
         {
-            res.state(200).json(getSuccessJson(escrowBuyer))
+            res.status(200).json(getSuccessJson(escrowBuyer))
         }
     } catch (error) {
         throw error
@@ -431,7 +438,7 @@ const getEscrowNFTSeller = async (req,res) => {
         let escrowSeller = await fnftServiceModule.getEscrowNFTSeller(req.body)
         if(escrowSeller)
         {
-            res.state(200).json(getSuccessJson(escrowSeller))
+            res.status(200).json(getSuccessJson(escrowSeller))
         }
     } catch (error) {
         throw error
@@ -443,7 +450,7 @@ const getEscrowNFTBalance = async (req,res) => {
         let escrowBal = await fnftServiceModule.getEscrowNFTBalance(req.body)
         if(escrowBal)
         {
-            res.state(200).json(getSuccessJson(escrowBal))
+            res.status(200).json(getSuccessJson(escrowBal))
         }
     } catch (error) {
         throw error
@@ -455,12 +462,25 @@ const getEscrowNFTState = async (req,res) => {
         let state = await fnftServiceModule.getEscrowNFTState(req.body)
         if(state)
         {
-            res.state(200).json(getSuccessJson(state))
+            res.status(200).json(getSuccessJson(state))
         }
     }
     catch(error)
     {
         throw error
+    }
+}
+
+const getAllNFTInfo = async(req,res) => {
+    try {
+        let allInfo = await nftDetails.find().exec();
+        console.log(allInfo);
+        if(allInfo)
+        {
+            res.status(200).json(allInfo)
+        }
+    } catch (error) {
+        console.log(error)
     }
 }
 
@@ -509,4 +529,5 @@ router.get('/getEscrowNFTState',getEscrowNFTState)
 router.get('/getOwnerOfNFTByIndex',getOwnerOfNFTByIndex)
 router.get('/getNFTTokenOfOwnerByIndex',getNFTTokenOfOwnerByIndex)
 
+router.get('/getAllNFTInfo',getAllNFTInfo)
 module.exports = router;

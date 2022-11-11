@@ -1,30 +1,30 @@
-
 const Web3 = require('web3');
 require('dotenv').config();
 const webhookLink = process.env.webhookLink;
 const logger = require(`../config/winston`);
 
-let web3;
+var web3js;
 const getWalletProvider = async function() {
   logger.info('getWalletProvider method invoked')
-    let httpProvider;
+    /*let httpProvider;
     if (typeof (httpProvider) === 'undefined') {
         httpProvider = new Web3.providers.HttpProvider(webhookLink, {keepAlive: false});
-        web3 = new Web3(httpProvider);
-        web3.setProvider(httpProvider);
-        web3.eth.handleRevert = true;
-        web3.eth.transactionPollingTimeout = 1500;
-        web3.eth.extend({
+        web3js = new Web3(httpProvider);
+        web3js.setProvider(httpProvider);
+        web3js.eth.handleRevert = true;
+        web3js.eth.transactionPollingTimeout = 1500;
+        web3js.eth.extend({
             property: 'txpool',
             methods: [{
               name: 'status',
               call: 'txpool_status'
             }]
           });
-        //const txnsStatus = await web3.eth.txpool.status();
+        //const txnsStatus = await web3js.eth.txpool.status();
         //logger.debug(`===============TxPoolStatus============ ${parseInt(txnsStatus['pending'],10)}`);
-    }
-    return web3;
+    }*/
+    web3js = new Web3(Web3.givenProvider || webhookLink);
+    return web3js;
 };
 
 module.exports = {

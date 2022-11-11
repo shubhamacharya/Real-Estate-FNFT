@@ -61,7 +61,7 @@ const CompileContract = (contractName) => {
 }
 
 const getWeb3Obj = async () => {
-  return await walletIns.getWalletProvider();
+    return await walletIns.getWalletProvider();
 }
 
 const deploy = async (contractName,account,params=[]) => {

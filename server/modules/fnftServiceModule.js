@@ -1,32 +1,34 @@
 const logger = require('../config/winston');
+const fs = require('fs/promises')
+const formidable = require("formidable");
+var path = require('path');
 
 const RealEstateNFTJSON = require('../contractJSONs/RealEstateNFT.json')
 const FractionalNFTJSON = require('../contractJSONs/FractionalNFT.json')
 const FractionalClaimJSON = require('../contractJSONs/FractionalClaim.json')
 const NFTEscrowJSON = require('../contractJSONs/NFTEscrow.json')
-
 const {deploy,getWeb3Obj} = require('./deploy')
 
 const nftDetails = require('../models/nftDetails');
 const transactionDetails =  require('../models/transactionDetails');
-const Contract = require('../models/contracts');
+const ContractModel = require('../models/contracts');
 const fnftDetails = require('../models/fnftDetails');
 const tokenSellDetails = require('../models/tokenSell')
 
-
-let RealEstateNFTInstance,NFTEscrowInstance,FractionalClaimInstance,FractionalNFTInstance,web3
+var imgFileExt
+var RealEstateNFTInstance,NFTEscrowInstance,FractionalClaimInstance,FractionalNFTInstance,web3js
 
 const getTransactionObject = (fromAddress,value=0,gas='6721975') => {
     return {
         from: fromAddress,
-        value: web3.utils.toWei(web3.utils.BN(value)),
+        value: web3js.utils.toWei(web3js.utils.BN(value)),
         gas: '6721975'
       }
 }
 
 const deployContract = async (ownerAddress,contractName,param=[]) => {
     try{
-        web3 = await getWeb3Obj();
+        web3js = await getWeb3Obj();
         return await deploy(contractName,ownerAddress,param)
     }
     catch(error)
@@ -35,54 +37,118 @@ const deployContract = async (ownerAddress,contractName,param=[]) => {
     }
 }
 
+const isFileValid = (file) => {
+    const type = imgFileExt = file.type.split("/").pop();
+    const validTypes = ["jpg", "jpeg", "png", "pdf"];
+    if (validTypes.indexOf(type) === -1) {
+      return false;
+    }
+    return true;
+  };
+
 const loadRealEstateNFTContract = async (contractAddress) => {
-    RealEstateNFTInstance = new web3.eth.Contract(RealEstateNFTJSON.abi,contractAddress);
+    web3js = await getWeb3Obj()
+    RealEstateNFTInstance = new web3js.eth.Contract(RealEstateNFTJSON.abi,contractAddress);
     RealEstateNFTInstance.options.address = contractAddress
     return RealEstateNFTInstance
 }
 
+const deployRealEstate = async (deployer) => {
+    let contractAddress = await deployContract(deployer, process.env.RealEstateNFT);
+    return contractAddress
+}
+
 const createToken = async (reqBody) => {
     try {
-        logger.info('method createTokens invoked');
-        logger.info('reqBody', reqBody);
-        
         const nftInfo = new nftDetails()
-        const contracts = new Contract()
+        const contracts = new ContractModel()
         const transactionInfo = new transactionDetails()
 
-        let transactioHash;
-        let contractAddress = await deployContract(reqBody.deployerAddress, process.env.RealEstateNFT);
+        let transactionHash;
 
-        await loadRealEstateNFTContract(contractAddress);
-
+        logger.info('method createTokens invoked');
+        const form = formidable.IncomingForm();
+        const uploadFolder = path.resolve(process.env.NFTImage,"NFT");
+        
+        form.multiples = true;
+        form.maxFileSize = 50 * 1024 * 1024;
+        form.uploadDir = uploadFolder;
         reqObj = {};
-        reqObj.toAddress = reqBody.toAddress;
-        reqObj.tokenURI = reqBody.tokenURI;
-        console.log('reqObj-------', reqObj);
 
-        //RealEstateNFTInstance.options.address = contractAddress
-        //console.log("Create token addresses "+contractAddress+"  "+RealEstateNFTInstance.options.address);
-        RealEstateNFTReceipt = await RealEstateNFTInstance.methods.mint(reqBody.toAddress, reqBody.tokenURI).send(getTransactionObject(reqBody.deployerAddress));
-        transactioHash = RealEstateNFTReceipt.transactionHash
+        new Promise(function(resolve, reject) 
+        {
+            form.parse(reqBody, (err, fields, files) => {
+            
+            if (err) {
+              reject("Error parsing the files");
+            }
+            else
+            {
+                resolve({fields,files})
+            }
+        })
+    }).then(async({fields,files}) => {
+        if (!files.img.length) {
+            const file = reqObj.imgFile = files.img;
+            const buffer = new Buffer.from(await fs.readFile(file.path),"base64");
+            reqObj.fileName = encodeURIComponent(file.name.replace(/\s/g, "-"));
+            if (!isFileValid(file)) {
+              console.log("The file type is not a valid type");
+            }
+            try {
+                if(!await fs.stat(`${uploadFolder}`)) {
+                    await fs.mkdir(`${uploadFolder}`,{recursive:true});
+                }
+                await fs.writeFile(file.path,buffer,function (err) {
+                    if(err) 
+                        return console.error(err)
+                    else
+                        console.log(`Image File > file.path`);
+                })
+                
+            } catch (error) {
+              console.log(error);
+            }
+        }
+        var realEstateAddress
+        var realEstateObj = await ContractModel.findOne({ownerAddress : fields.toAddress}).exec()
+        
+        if(realEstateObj)
+            realEstateAddress = realEstateObj['RealEstateNFT']
+        
+        if(!realEstateAddress)
+        {
+            realEstateAddress = await deployRealEstate(fields.toAddress)
+            contracts.ownerAddress = fields.toAddress
+        contracts.RealEstateNFT = realEstateAddress
+        }
+        RealEstateNFTInstance = await loadRealEstateNFTContract(realEstateAddress);
+        RealEstateNFTReceipt = await RealEstateNFTInstance.methods.mint(fields.toAddress, fields.tokenURI)
+                                .send(getTransactionObject(fields.toAddress));
+        transactionHash = RealEstateNFTReceipt.transactionHash
         logger.debug(`Transaction Receipt = ${RealEstateNFTReceipt.transactionHash} Block Number= ${RealEstateNFTReceipt.blockNumber}`);
 
         nftInfo.tokenId = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.tokenId
         nftInfo.tokenURI = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.tokenURI
         nftInfo.totalSupply = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.noOfFraction
+        
+        //Rename image file to userAddress_tokenId.extension
         nftInfo.ownerAddress = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.owner
-        //nftInfo.price = reqBody.price
+        let fileName = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.owner+"_"+RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.tokenId+"."+imgFileExt
+        await fs.rename(reqObj.imgFile.path, path.join(uploadFolder, fileName))
+
+        nftInfo.tokenImg = fileName
         nftInfo.blockNo = RealEstateNFTReceipt.blockNumber
         nftInfo.txId = RealEstateNFTReceipt.transactionHash
         nftInfo.contractAddress = RealEstateNFTInstance._address
         nftInfo.eventData = RealEstateNFTReceipt.events
+        nftInfo.price = fields.price
+        nftInfo.name = fields.name
 
-        contracts.ownerAddress = reqBody.toAddress
-        contracts.RealEstateNFT = contractAddress
-        contracts.tokenId = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.tokenId
-
+        transactionInfo.contractAddress = RealEstateNFTReceipt.events.Transfer.address
         transactionInfo.tokenId = RealEstateNFTReceipt.events.NFTTokenCreated.returnValues.tokenId
-        transactionInfo.to = RealEstateNFTReceipt.to
-        transactionInfo.from = RealEstateNFTReceipt.from
+        transactionInfo.to = RealEstateNFTReceipt.events.Transfer.returnValues.to
+        transactionInfo.from = RealEstateNFTReceipt.events.Transfer.returnValues.from
         transactionInfo.txType = RealEstateNFTReceipt.type
         transactionInfo.blockNo = RealEstateNFTReceipt.blockNumber
         transactionInfo.eventData = RealEstateNFTReceipt.events
@@ -91,79 +157,77 @@ const createToken = async (reqBody) => {
         await nftInfo.save()
         await contracts.save()
         await transactionInfo.save()
-
-        return {
-            transactionReceipt: transactioHash,
-        };
-    } catch (error) {
+        return String(transactionHash)
+        })
+    } 
+    catch (error) {
         logger.error(`Exception occoured in createToken method ${error.stack}`);
         throw error.message;
     }
 };
 
-const getNameOfNFT = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId}).exec()
+/*const getNameOfNFT = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId}).exec()
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.name().call()  
-}
+}*/
 
 const getSymbolOfNFT = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
-    loadRealEstateNFTContract(tempRec['RealEstateNFT'])
+    let tempRec = await ContractModel.findOne({ownerAddress : reqBody.ownerAddress})
+    await loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.symbol().call()
 }
 
 const getTotalNFTSupply = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({ownerAddress:reqBody.ownerAddress})
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.totalSupply().call()   
 }
 
-const getNFTBalance = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+/*const getNFTBalance = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.balanceOf(reqBody.owner).call();
-}
+}*/
 
 const getNFTTokenURI = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
-    loadRealEstateNFTContract(tempRec['RealEstateNFT'])
+    let tempRec = await ContractModel.findOne({ownerAddress:reqBody.ownerAddress})
+    await loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.tokenURI(reqBody.tokenId).call()
 }
-
-const getOwnerOfNFTContract =  async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+/*
+const getOwnerOfNFTContract = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.owner().call()
 }
 
 //Needs Improvement : Fecting token id to get tokenId
 /*const getNFTTokenId = (reqBody) => {
-    let tempRec = Contract.findOne({tokenId:reqBody.tokenId}).exec()
+    let tempRec = ContractModel.findOne({tokenId:reqBody.tokenId}).exec()
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return RealEstateNFTReceipt.events['Transfer']['returnValues'][2]
 }*/
 
 /*const getNFTTokenIdByIndex = async (index=0) => {
-    let tempRec = Contract.findOne({tokenId:reqBody.tokenId}).exec()
+    let tempRec = ContractModel.findOne({tokenId:reqBody.tokenId}).exec()
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return RealEstateNFTInstance.methods.tokenByIndex(index)
 }*/
 
-/*const getNFTContractAddress = async (reqBody) => {
-    let tempRec = Contract.findOne({tokenId:reqBody.tokenId}).exec()
-    loadRealEstateNFTContract(tempRec['RealEstateNFT'])
+const getNFTContractAddress = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({ownerAddress:reqBody.ownerAddress}).exec()
     return tempRec['RealEstateNFT']
-}*/ 
+} 
 
 /*const getOwnerOfNFTByIndex = async (reqBody) => {
-    let tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return  RealEstateNFTInstance.methods.ownerOf(index).call()
 }*/
 
 /*const getNFTTokenOfOwnerByIndex = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadRealEstateNFTContract(tempRec['RealEstateNFT'])
     return await RealEstateNFTInstance.methods.tokenOfOwnerByIndex(reqBody.owner,reqBody.tokenId).call()
 }*/
@@ -186,7 +250,7 @@ const fractionToken = async(reqBody) => {
     
     await loadFractionalNFTContract(contractAddress)
     
-    await Contract.updateOne({tokenId:reqObj.NFTTokenId,ownerAddress:reqObj.toAddress},{FractionalNFT:contractAddress}).exec()//,{FractionalNFT:contractAddress})
+    await ContractModel.updateOne({tokenId:reqObj.NFTTokenId,ownerAddress:reqObj.toAddress},{FractionalNFT:contractAddress}).exec()//,{FractionalNFT:contractAddress})
 
     FractionalNFTReceipt = await FractionalNFTInstance.methods.mint(reqObj.toAddress,reqObj.noOfFractions,reqObj.NFTTokenId).send(getTransactionObject(reqObj.toAddress))
     logger.debug(`Transaction Receipt = ${FractionalNFTReceipt.transactionHash} Block Number = ${FractionalNFTReceipt.blockNumber}`);
@@ -208,44 +272,44 @@ const fractionToken = async(reqBody) => {
 
     await fnftInfo.save()
     await transactionInfo.save()
-    return FractionalNFTReceipt.transactioHash
+    return FractionalNFTReceipt.transactionHash
 }
 
 const loadFractionalNFTContract = async(contractAddress) => {
-    FractionalNFTInstance =  await new web3.eth.Contract(FractionalNFTJSON.abi,contractAddress);
+    FractionalNFTInstance =  await new web3js.eth.Contract(FractionalNFTJSON.abi,contractAddress);
     //FractionalNFTInstance.options.address = contractAddress
     return FractionalNFTInstance
 }
 
-const getTotalFNFTSupply = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+/*const getTotalFNFTSupply = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadRealEstateNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.totalSupply().call();
 }
 
 const getFNFTBalance = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.balanceOf(reqBody.owner).call();
 }
 
 const getNameOfFNFT =  async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.name().call()
 }
 
 const getSymbolOfFNFT = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.symbol().call()
 }
 
 const getOwnerOfFNFT =  async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.owner().call()
-}
+}*/
 
 const transferERC20Token = async (reqBody) => {
     try {
@@ -253,7 +317,7 @@ const transferERC20Token = async (reqBody) => {
         logger.info('reqBody',reqBody)
         //console.log("FractionalNFTInstance ===> ",FractionalNFTInstance);
         let transactionInfo = new transactionDetails()
-        let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+        let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
         //console.log("Temp Rec \n"+tempRec);
         let contractAddress = tempRec['FractionalNFT']
         let ownerAddress = tempRec['ownerAddress']
@@ -285,7 +349,7 @@ const transferERC20Token = async (reqBody) => {
 }
 
 const loadFractionalClaimContract = async (contractAddress) => {
-    FractionalClaimInstance = new web3.eth.Contract(FractionalClaimJSON.abi,contractAddress)
+    FractionalClaimInstance = new web3js.eth.Contract(FractionalClaimJSON.abi,contractAddress)
     //FractionalClaimInstance.options.address = contractAddress
     return FractionalClaimInstance 
 }
@@ -296,14 +360,14 @@ const deployClaimContract = async (reqBody) => {
     logger.info('Deploying FractionalClaim contract');
     try {
         param[1] = reqBody.tokenId
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec() 
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec() 
         param[0] = tempRec['RealEstateNFT']
         let contractAddress = await deployContract(reqBody.ownerAddress,process.env.FractionalClaim,param)
         await loadFractionalClaimContract(contractAddress)
 
         logger.info(`FractionalClaim contract loaded`);
 
-        Contract.updateOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.ownerAddress},{fractionalClaim : contractAddress}).exec()
+        ContractModel.updateOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.ownerAddress},{fractionalClaim : contractAddress}).exec()
         return contractAddress
     } catch (error) {
         logger.error(`Exception occurred in deployClaimContract method :: ${error.stack}`);
@@ -311,11 +375,11 @@ const deployClaimContract = async (reqBody) => {
     }
 }
 
-const getClaimStateOfToken = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+/*const getClaimStateOfToken = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
     loadFractionalClaimContract(tempRec['fractionalClaim']);
     return await FractionalClaimInstance.methods.claimState().call()  
-}
+}*/
 
 const fundFNFTContract = async (reqBody) => {
     logger.info('Inside fundFNFTContract method');
@@ -326,7 +390,7 @@ const fundFNFTContract = async (reqBody) => {
         let transactionInfo = new transactionDetails()
         logger.info('transfering amount');
         console.log('transfering amount');
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.ownerAddress}).exec()
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.ownerAddress}).exec()
         await loadFractionalClaimContract(tempRec['fractionalClaim'])
         //console.log(`AmtInEth ==> ${reqBody.amtInEth}\t\tAmtInWei ==> ${amt}`);
         let FNFTFundReceipt = await FractionalClaimInstance.methods.fund(tempRec['FractionalNFT'])
@@ -354,18 +418,18 @@ const fundFNFTContract = async (reqBody) => {
     }
 }
 
-const getFundedAmt = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId})
+/*const getFundedAmt = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalClaimContract(tempRec['fractionalClaim'])
     let funds = await FractionalClaimInstance.methods.funds().call()
-    return await web3.utils.fromWei(funds,'ether')
-}
+    return await web3js.utils.fromWei(funds,'ether')
+}*/
 
 const approveFractionalClaimForFNFT = async (reqBody) => {
     let transactionInfo = new transactionDetails()
-    web3 = await getWeb3Obj()
-    //let amt = await web3.utils.toWei(await web3.utils.BN(reqBody.approvedAmtInEth))
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId}).exec()
+    web3js = await getWeb3Obj()
+    //let amt = await web3js.utils.toWei(await web3js.utils.BN(reqBody.approvedAmtInEth))
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId}).exec()
     FractionalNFTInstance = await loadFractionalNFTContract(tempRec['FractionalNFT'])
     let approvalReceipt = await FractionalNFTInstance.methods.approve(tempRec['fractionalClaim'],reqBody.approvedAmtInEth)
                     .send(getTransactionObject(fromAddress=reqBody.fractionOwner))
@@ -382,44 +446,44 @@ const approveFractionalClaimForFNFT = async (reqBody) => {
     return approvalReceipt
 }
 
-const getTokenAllowanceFromClaim = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec();
+/*const getTokenAllowanceFromClaim = async (reqBody) => {
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec();
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     loadFractionalClaimContract(tempRec['fractionalClaim'])
     return await FractionalNFTInstance.methods.allowance(reqBody.owner,tempRec['fractionalClaim']).call()
 }
 
 const getownerAddressOfClaim = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
     FractionalClaimInstance = await loadFractionalClaimContract(tempRec['fractionalClaim']);
     return await FractionalClaimInstance.methods.ownerAddress().call()
 }
 
 const getnftAddressFromClaim = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
     FractionalClaimInstance = await loadFractionalClaimContract(tempRec['fractionalClaim']);
     return await FractionalClaimInstance.methods.nftAddress().call()
 }
 
 const getTokenAddressFromClaim = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
     FractionalClaimInstance = await loadFractionalClaimContract(tempRec['fractionalClaim']);
     return await FractionalClaimInstance.methods.tokenAddress().call()
 }
 
 const getTotalFNFTClaimSupply = async (reqBody) => {
-    let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
     await loadFractionalClaimContract(tempRec['fractionalClaim']);
     //FractionalClaimInstance.options.address = tempRec['fractionalClaim']
     return await FractionalClaimInstance.methods.supply().call()
     //console.log('supp', supp);
     //return supp
-}
+}*/
 
 const claimFNFTTokens = async (reqBody) => { 
     logger.info(`inside claimFNFTTokens function`)
     let transactionInfo = new transactionDetails();
-    let tempRec = await Contract.findOne({tokenId:reqBody.tokenId}).exec()
+    let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId}).exec()
     loadFractionalClaimContract(tempRec['fractionalClaim'])
     loadFractionalNFTContract(tempRec['FractionalNFT'])
 
@@ -440,7 +504,7 @@ const claimFNFTTokens = async (reqBody) => {
 }
 
 const loadNFTEscrowContract = async(contractAddress) => {
-    NFTEscrowInstance = new web3.eth.Contract(NFTEscrowJSON.abi,contractAddress)
+    NFTEscrowInstance = new web3js.eth.Contract(NFTEscrowJSON.abi,contractAddress)
     //NFTEscrowInstance.options.address = contractAddress
     return NFTEscrowInstance
 }
@@ -451,7 +515,7 @@ const addNFTForSell = async(reqBody) => {
         logger.info('reqBody', reqBody);
 
         let contractAddress = await deployContract(reqBody.sellerAddress,process.env.Escrow)
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.sellerAddress}).exec()
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.sellerAddress}).exec()
 
         reqObj = {}
         reqObj.tokenId = reqBody.tokenId
@@ -461,7 +525,7 @@ const addNFTForSell = async(reqBody) => {
 
         loadNFTEscrowContract(contractAddress)
         let addForSellReceipt = await depositeNFTtoNFTEscrow(reqObj)
-        await Contract.updateOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.sellerAddress},{escrowNFT:contractAddress}).exec()
+        await ContractModel.updateOne({tokenId : reqBody.tokenId,ownerAddress : reqBody.sellerAddress},{escrowNFT:contractAddress}).exec()
 
         transactionInfo = new transactionDetails()
         tokenSellInfo = new tokenSellDetails()
@@ -561,7 +625,7 @@ const fundNFTEscrow = async (reqBody) => {
     transactionInfo = new transactionDetails()
     try
     {
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId}).exec()
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId}).exec()
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         logger.info(`Depositing ${reqBody.amtInEth} ether to NFTEscrow contract`)
         let fundNFTEscrowReceipt = await NFTEscrowInstance.methods.depositETH()
@@ -590,7 +654,7 @@ const initiateDelivery = async (reqBody) => {
     try
     {
         let transactionInfo = new transactionDetails()
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId})
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT']) 
         logger.info(`Initiating delivery to sell token.`)
         let NFTDeliveryReceipt = await NFTEscrowInstance.methods.initiateDelivery()
@@ -619,7 +683,7 @@ const initiateDelivery = async (reqBody) => {
 const confirmNFTDeliveryByBuyer = async (reqBody) => {
     try
     {
-        let tempRec = await Contract.findOne({tokenId : reqBody.tokenId})
+        let tempRec = await ContractModel.findOne({tokenId : reqBody.tokenId})
         
         await loadNFTEscrowContract(tempRec['escrowNFT']) 
         await loadFractionalNFTContract(tempRec['RealEstateNFT'])
@@ -653,7 +717,7 @@ const confirmNFTDeliveryByBuyer = async (reqBody) => {
 
 const cancelAtNFT = async (reqBody) => {
     try {
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         logger.info(`Cancelling delivery from seller.`)
         let NFTSellerCancelReceipt = await NFTEscrowInstance.methods.cancelAtNFT()
@@ -666,7 +730,7 @@ const cancelAtNFT = async (reqBody) => {
 
 const cancelBeforeDelivery = async (reqBody) => {
     try {
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         let cancelledBeforeReceipt = await NFTEscrowInstance.methods.cancelBeforeDelivery(reqBody.state)
         .send(getTransactionObject(reqBody.user))
@@ -681,9 +745,9 @@ const cancelBeforeDelivery = async (reqBody) => {
     }
 }
 
-const getEscrowNFTBuyer = async (reqBody) => {
+/*const getEscrowNFTBuyer = async (reqBody) => {
     try {
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         return await NFTEscrowInstance.methods.buyerAddress().call()
     } catch (error) {
@@ -693,7 +757,7 @@ const getEscrowNFTBuyer = async (reqBody) => {
 
 const getEscrowNFTSeller = async (reqBody) => {
     try {
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         return await NFTEscrowInstance.methods.sellerAddress().call()
     } catch (error) {
@@ -703,7 +767,7 @@ const getEscrowNFTSeller = async (reqBody) => {
 
 const getEscrowNFTBalance = async (reqBody) => {
     try{
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         return await NFTEscrowInstance.methods.getBalance().call()  
     }
@@ -714,7 +778,7 @@ const getEscrowNFTBalance = async (reqBody) => {
 
 const getEscrowNFTState = async (reqBody) => {
     try {
-        tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+        tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
         await loadNFTEscrowContract(tempRec['escrowNFT'])
         return await NFTEscrowInstance.methods.projectState().call()
     } catch (error) {
@@ -722,7 +786,7 @@ const getEscrowNFTState = async (reqBody) => {
     }
 }
 /*const getFNFTContractAdress = async (reqBody) => {
-    let tempRec = Contract.findOne({tokenId:reqBody.tokenId})
+    let tempRec = ContractModel.findOne({tokenId:reqBody.tokenId})
     //loadRealEstateNFTContract(tempRec['FractionalNFT'])
     //const res = await RealEstateNFTInstance.methods.FNFT(getNFTTokenId()).call()
     return tempRec['FractionalNFT'];
@@ -733,19 +797,19 @@ module.exports = {
     fractionToken,
     loadFractionalNFTContract,
     //getFNFTContractAdress,
-    //getNFTContractAddress,
+    getNFTContractAddress,
     //getNFTTokenId,
     getTotalNFTSupply,
-    getTotalFNFTSupply,
+    /*getTotalFNFTSupply,
     getFNFTBalance,
-    getNFTBalance,
+    getNFTBalance,*/
     //getNFTTokenIdByIndex,
-    getNameOfNFT,
-    getNameOfFNFT,
+    /*getNameOfNFT,
+    getNameOfFNFT,*/
     getSymbolOfNFT,
-    getSymbolOfFNFT,
+    /*getSymbolOfFNFT,
     getOwnerOfNFTContract,
-    getOwnerOfFNFT,
+    getOwnerOfFNFT,*/
     //getOwnerOfNFTByIndex,
     getNFTTokenURI,
     //getNFTTokenOfOwnerByIndex,
@@ -754,14 +818,14 @@ module.exports = {
     
     deployClaimContract,
     fundFNFTContract,
-    getFundedAmt,
+    /*getFundedAmt,
     getTotalFNFTClaimSupply,
     getClaimStateOfToken,
     getownerAddressOfClaim,
     getnftAddressFromClaim,
     getTokenAddressFromClaim,
+    getTokenAllowanceFromClaim,*/
     approveFractionalClaimForFNFT,
-    getTokenAllowanceFromClaim,
     claimFNFTTokens,
 
     loadNFTEscrowContract,
@@ -771,8 +835,8 @@ module.exports = {
     confirmNFTDeliveryByBuyer,
     cancelAtNFT,
     cancelBeforeDelivery,
-    getEscrowNFTBuyer,
+    /*getEscrowNFTBuyer,
     getEscrowNFTSeller,
     getEscrowNFTBalance,
-    getEscrowNFTState,
+    getEscrowNFTState,*/
 };
