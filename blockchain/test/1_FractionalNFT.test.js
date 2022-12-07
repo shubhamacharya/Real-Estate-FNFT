@@ -93,12 +93,12 @@ contract('RealEstateNFT', async accounts => {
             result = await FractionalNFTInstance.mint(owner,4,0)
         })
         it('should transfers the ERC-20 token to new users',async() => {
-            result = await FractionalNFTInstance.transfer(fractionalBuyer1,'2000000000000000000') // 50% of FractionalNFT Tokens from owner's balance
+            result = await FractionalNFTInstance.transfer(fractionalBuyer1,'2') // 50% of FractionalNFT Tokens from owner's balance
             assert.equal(result.receipt.status, true, 'token transfer failed');
             assert.equal(result.receipt.logs[0].event, 'Transfer', 'token transfer event not emitted');
             assert.equal(result.receipt.logs[0].args.to, fractionalBuyer1, 'token transfer event not emitted');
 
-            result = await FractionalNFTInstance.transfer(fractionalBuyer2,'1000000000000000000') // 25% of FractionalNFT Tokens from owner's balance
+            result = await FractionalNFTInstance.transfer(fractionalBuyer2,'1') // 25% of FractionalNFT Tokens from owner's balance
             assert.equal(result.receipt.status, true, 'token transfer failed');
             assert.equal(result.receipt.logs[0].event, 'Transfer', 'token transfer event not emitted');
             assert.equal(result.receipt.logs[0].args.to, fractionalBuyer2, 'token transfer event not emitted');
@@ -106,9 +106,9 @@ contract('RealEstateNFT', async accounts => {
             let ownerBalance = await FractionalNFTInstance.balanceOf(owner)
             let fractionalBuyer1Balance = await FractionalNFTInstance.balanceOf(fractionalBuyer1)
             let fractionalBuyer2Balance = await FractionalNFTInstance.balanceOf(fractionalBuyer2)
-            assert.equal(ownerBalance.toString(),'1000000000000000000', 'Token balance does not match')
-            assert.equal(fractionalBuyer1Balance.toString(),'2000000000000000000', 'Token balance does not match')
-            assert.equal(fractionalBuyer2Balance.toString(),'1000000000000000000', 'Token balance does not match')
+            assert.equal(ownerBalance.toString(),'1', 'Token balance does not match')
+            assert.equal(fractionalBuyer1Balance.toString(),'2', 'Token balance does not match')
+            assert.equal(fractionalBuyer2Balance.toString(),'1', 'Token balance does not match')
 
         })
         it('should deploy Fractional claim contract', async() => {
@@ -127,7 +127,7 @@ contract('RealEstateNFT', async accounts => {
         it('should return the total supply of the token', async()	=> {
             result = await fractionalClaimInstance.supply();
             // console.log('result', result.toString());
-            assert.equal(result.toString(), '4000000000000000000', 'Total supply does not match')
+            assert.equal(result.toString(), '4', 'Total supply does not match')
         })
         it('should return the claim state of the token', async()=> {
             result = await fractionalClaimInstance.claimState();
@@ -181,11 +181,11 @@ contract('RealEstateNFT', async accounts => {
             assert.equal(result.toString(), '1000000000000000000', 'Allowance does not match')
         })
         it('should claim the FractionalNFT token', async() => {
-            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '1000000000000000000', {from: owner})
+            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '1', {from: owner})
             assert.equal(result.receipt.status, true, 'Claim function failed')
-            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '2000000000000000000', {from: fractionalBuyer1})
+            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '2', {from: fractionalBuyer1})
             assert.equal(result.receipt.status, true, 'Claim function failed')
-            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '1000000000000000000', {from: fractionalBuyer2})
+            result = await fractionalClaimInstance.claim(FractionalNFTInstance.address, '1', {from: fractionalBuyer2})
             assert.equal(result.receipt.status, true, 'Claim function failed')
 
         })
