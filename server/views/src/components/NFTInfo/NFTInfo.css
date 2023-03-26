@@ -1,0 +1,103 @@
+.image > img{
+    width: 500px;
+    height: 540px;
+    margin-top: 30px;
+    margin-left: 20px;
+    margin-bottom: 40px;
+    border-radius: 20px;
+}
+
+.infoName {
+  font-size: 50px;
+  font-weight: 300;
+  margin: 2px;
+}
+
+.infoName > button {
+  margin: 20px;
+}
+
+.infoDetails {
+  display: flex;
+  background-color: #2b2e2f;
+}
+
+.infoDetails > table,td,tr {
+  width: 80%;
+  text-align: left;
+  vertical-align: middle;
+  line-height: 40px;
+  margin-left: 40px;
+}
+
+.fontLow {
+  font-size: 20px;
+}
+
+.detailBorder {
+  border-bottom: 2px solid;
+  height: 70px;
+  margin-bottom: 20px;
+}
+
+.split {
+    height: 100%;
+    width: 50%;
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    overflow-x: hidden;
+    padding-top: 20px;
+    display: flex;
+}
+  
+.container {
+  color: white;
+  background-color: #1a1c1e;
+  border-radius: 20px;
+  overflow: auto;
+  width: 800px;
+  height: 500px;
+  margin-right: 30px;
+  margin-bottom: 30px;
+  margin-top: 10%;
+}
+
+.left {
+  left: 0;
+}
+ 
+.right {
+  right: 0;
+}
+
+.centered {
+  position: absolute;
+  top: 15%;
+  text-align: center;
+}
+
+.accordion {
+  background-color: #eee;
+  color: #444;
+  cursor: pointer;
+  padding: 18px;
+  width: 98%;
+  height: 50px;
+  text-align: left;
+  outline: black thick;
+  transition: 0.4s;
+  border-radius: 10px;
+  font-size: 25px;
+  vertical-align: middle;
+}
+
+.active, .accordion:hover {
+  background-color: #ccc;
+}
+
+.panel {
+  background-color: #1a1c1e;
+  display: none;
+  overflow: auto;
+}

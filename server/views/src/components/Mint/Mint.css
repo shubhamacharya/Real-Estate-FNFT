@@ -1,0 +1,127 @@
+* {
+    color : white;
+}
+
+.mintContainer {
+    overflow: scroll;
+    display: flex;
+    flex-direction: column;
+}
+
+.mintHeadContainer {
+    display: flex;
+    flex-direction: column;
+    -webkit-box-align: center;
+    align-items: center;
+}
+
+.mintHeadContainer > span {
+    margin-top : 35px;
+    font-size: 30px;
+    font-weight: 250;
+    color: rgb(209, 203, 203);
+}
+
+.mintHeadContainer > h5 {
+    margin-top : 35px;
+    font-size: 15px;
+    color: rgb(209, 203, 203);
+}
+
+.mintHeadContainer > header {
+    font-size: 50px;
+}
+
+.imageInfo {
+    margin: 14px;
+    font-weight: 600;
+}
+
+.border {
+    border: rgb(192, 182, 182) dashed medium;
+    height: 300px;
+    width: 511px;
+    margin-left: 36.3%;
+    margin-top: 20px;
+}
+
+.defaultImg {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    height: 150px;
+    margin-top: 70px;
+}
+
+.border input[type=file] {
+    font-size: 10px;
+    position: relative;
+    left: 0;
+    top: 0;
+    margin-top: 20px;
+    width: 50%;
+    padding-left: 250px;
+    transform: translateX(10%);
+    transform: translateY(-120%);
+    padding: 50px 28px;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.uploadedImg {
+    width: 300px;
+    height: 301px;
+    padding-left: 20%;
+    padding-top: 20px;
+}
+
+.cross{
+    padding-left: 500px;
+}
+
+.cross input[type=file] {
+    pointer-events: none;
+    opacity: 0;
+}
+
+.submitButton {
+    overflow: hidden;
+    position: relative;
+}
+
+.submitButton > button {
+    display: block;
+    width: 10%;
+    border: none;
+    background-color: #051f15;
+    padding: 10px 28px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+    cursor: pointer;
+    margin-left: 800px;
+    border-radius: 10px;
+}
+
+.nftInfo {
+    display: flex;
+    flex-direction: column;
+}
+
+.nftInfo > span
+{
+    position: relative; 
+    margin-left: 37%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 25px;
+}
+
+.nftInfo > input {
+    position: relative;
+    width: 25%;
+    height: 30px;
+    margin-left: 37%;
+    font-size: 25px;
+    background-color: transparent;
+}
