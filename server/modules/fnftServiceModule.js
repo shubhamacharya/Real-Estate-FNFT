@@ -281,13 +281,15 @@ const loadFractionalNFTContract = async(contractAddress) => {
     return FractionalNFTInstance
 }
 
-/*const getTotalFNFTSupply = async (reqBody) => {
+const getTotalFNFTSupply = async (reqBody) => {
     let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
+    console.log(tempRec)
     loadRealEstateNFTContract(tempRec['FractionalNFT'])
+    console.log(FractionalNFTInstance.methods)
     return await FractionalNFTInstance.methods.totalSupply().call();
 }
 
-const getFNFTBalance = async (reqBody) => {
+/*const getFNFTBalance = async (reqBody) => {
     let tempRec = await ContractModel.findOne({tokenId:reqBody.tokenId})
     loadFractionalNFTContract(tempRec['FractionalNFT'])
     return await FractionalNFTInstance.methods.balanceOf(reqBody.owner).call();
@@ -800,8 +802,8 @@ module.exports = {
     getNFTContractAddress,
     //getNFTTokenId,
     getTotalNFTSupply,
-    /*getTotalFNFTSupply,
-    getFNFTBalance,
+    getTotalFNFTSupply,
+    /*getFNFTBalance,
     getNFTBalance,*/
     //getNFTTokenIdByIndex,
     /*getNameOfNFT,
